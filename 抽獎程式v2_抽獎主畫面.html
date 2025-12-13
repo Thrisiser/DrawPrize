@@ -689,6 +689,9 @@
   </div>
 </main>
 
+<!-- 🎵 抽獎緊張配樂（放在同資料夾：抽獎緊張配樂.mp3） -->
+<audio id="raffleBgm" src="抽獎緊張配樂.mp3" preload="auto" loop></audio>
+
 <script>
 /* ========= Storage Keys ========= */
 const LS_PARTICIPANTS = 'raffle_participants_v2';
@@ -757,6 +760,24 @@ function loadJSON(key, fallback) {
 }
 function saveJSON(key, val) {
   localStorage.setItem(key, JSON.stringify(val));
+}
+
+/* ========= BGM ========= */
+const bgmEl = document.getElementById('raffleBgm');
+
+function playBgm(){
+  if (!bgmEl) return;
+  bgmEl.currentTime = 0;      // 每次抽獎都從頭開始（符合你的需求）
+  bgmEl.volume = 0.8;         // 0~1，可調整
+  const p = bgmEl.play();
+  // 避免某些瀏覽器回傳 Promise 被視為未處理
+  if (p && typeof p.catch === 'function') p.catch(()=>{});
+}
+
+function stopBgm(){
+  if (!bgmEl) return;
+  bgmEl.pause();
+  bgmEl.currentTime = 0;
 }
 
 /* ========= Load ========= */
@@ -912,6 +933,7 @@ document.getElementById('btnClearHistory').addEventListener('click', () => {
 
 /* ========= Draw ========= */
 function startDraw(){
+  stopBgm();  
   startParticles();
 
   // ✅ 修 BUG 關鍵：先記住使用者選到的獎項 index（不要抽獎時重建 select 造成跳回 0）
@@ -928,11 +950,13 @@ function startDraw(){
 
   if (!participants.length){
     alert('尚未匯入名單。請至「系統管理」匯入名單。');
+	stopBgm();        // ✅ 加這行
     stopParticles();
     return;
   }
   if (!prizes.length){
     alert('尚未建立獎項。請至「系統管理」新增獎項。');
+	stopBgm();        // ✅ 加這行
     stopParticles();
     return;
   }
@@ -940,6 +964,7 @@ function startDraw(){
   const p = prizes[Number(prizeSelect.value)];
   if (!p){
     alert('獎項選擇有誤，請重新選擇。');
+	stopBgm();        // ✅ 加這行
     stopParticles();
     return;
   }
@@ -950,11 +975,13 @@ function startDraw(){
   let candidates = participants.filter(x => allowRepeat ? true : !x.hasWon);
   if (!candidates.length){
     alert('目前沒有可參與抽獎的人（可能全部都已中獎）。可至系統管理選擇「清除中獎狀態」或開啟「允許重複中獎」。');
+	stopBgm();        // ✅ 加這行
     stopParticles();
     return;
   }
   if (!allowRepeat && candidates.length < winnerCount){
     alert('可抽人數少於中獎名額。請調整名額或在系統管理開啟「允許重複中獎」。');
+	stopBgm();        // ✅ 加這行
     stopParticles();
     return;
   }
@@ -962,6 +989,8 @@ function startDraw(){
   isDrawing = true;
   if (btnStart) btnStart.disabled = true;
   btnStartDock.disabled = true;
+  
+  playBgm();   // ✅ 正式進入抽獎流程才播放
 
   winnersListEl.innerHTML = '';
   rollingNameEl.textContent = '';
@@ -1006,6 +1035,7 @@ function startDraw(){
       saveJSON(LS_PARTICIPANTS, participants);
     }
 
+	stopBgm();              // ✅ 抽到結果立刻停
     finalizeDraw(p, winners);
     stopParticles();
   }, duration);
