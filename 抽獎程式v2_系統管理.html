@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>年終抽獎系統｜系統管理</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ✅ Favicon：抽獎骰子 -->
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect x='6' y='6' width='52' height='52' rx='12' fill='%230e0f14' stroke='%23f1d28a' stroke-width='4'/%3E%3Cg fill='%23f1d28a'%3E%3Ccircle cx='24' cy='24' r='4'/%3E%3Ccircle cx='40' cy='40' r='4'/%3E%3Ccircle cx='24' cy='40' r='4'/%3E%3Ccircle cx='40' cy='24' r='4'/%3E%3C/g%3E%3C/svg%3E" />
+
+  <style>
+    :root{
+      --bg0:#07070a;
+      --bg1:#0e0f14;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.085);
+      --text:#f6f3ea;
+      --muted: rgba(246,243,234,.72);
+      --gold:#d7b56d;
+      --gold2:#f1d28a;
+      --line: rgba(215,181,109,.22);
+      --shadow: 0 18px 55px rgba(0,0,0,.55);
+      --radius: 18px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(900px 380px at 50% 0%, rgba(215,181,109,.22), transparent 65%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      overflow-x:hidden;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.25));
+      border-bottom:1px solid var(--line);
+    }
+    .wrap{ max-width: 1200px; margin:0 auto; padding: 14px 18px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1{ margin:0; font-size: 18px; font-weight: 900; letter-spacing:.6px; }
+    .sub{ font-size: 12px; color: var(--muted); margin-top:2px; }
+    .btn{
+      appearance:none; border:1px solid rgba(215,181,109,.28);
+      background: linear-gradient(180deg, rgba(215,181,109,.22), rgba(215,181,109,.10));
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:.2px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      transition: transform .15s ease, filter .15s ease, border-color .15s ease;
+      user-select:none;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{ transform: translateY(-1px); filter:brightness(1.08); border-color: rgba(241,210,138,.55); }
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.14);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(255,95,95,.18), rgba(255,95,95,.10));
+      border-color: rgba(255,95,95,.35);
+    }
+
+    main{ padding: 16px 18px 26px; }
+    .grid{
+      max-width: 1200px;
+      margin: 0 auto;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .card{
+      background: linear-gradient(180deg, var(--panel2), var(--panel));
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(800px 160px at 50% 0%, rgba(241,210,138,.15), transparent 60%);
+      pointer-events:none;
+      opacity:.75;
+    }
+    .inner{ position:relative; padding: 16px; }
+    .chip{
+      display:inline-flex;
+      align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(215,181,109,.25);
+      background: rgba(215,181,109,.12);
+      color: rgba(241,210,138,.95);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    h2{ margin:0 0 10px; font-size: 16px; display:flex; align-items:center; gap:10px; }
+    label{ display:block; font-size:12px; color: var(--muted); margin: 10px 0 4px; }
+    input[type="text"], input[type="number"], textarea{
+      width:100%;
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.16);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-height: 42px;
+      font-size: 14px;
+      outline:none;
+    }
+    textarea{ min-height: 140px; resize: vertical; }
+    input[type="file"]{ margin-top: 6px; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    .row > *{ flex: 1; }
+    .muted{ color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .divider{ border-top: 1px dashed rgba(255,255,255,.14); margin: 12px 0; }
+
+    .list{
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    .item{
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      background: rgba(0,0,0,.12);
+    }
+    .item:last-child{ border-bottom:none; }
+    .item .title{ font-weight: 900; }
+    .item .desc{ margin-top:4px; color: var(--muted); font-size: 12px; }
+    .miniBtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .mini{ padding: 8px 10px; font-weight: 800; }
+
+    .toggle{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      background: rgba(0,0,0,.16);
+      margin-top: 10px;
+    }
+    .toggle input{ transform: scale(1.2); }
+
+    /* ✅ 名單公開檢視（昭公信） */
+    .namesPanel{
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      overflow:hidden;
+      background: rgba(0,0,0,.14);
+      display:none;
+    }
+    .namesHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      position:sticky; top:0;
+    }
+    .namesHead .t{
+      font-weight: 900;
+      letter-spacing:.2px;
+      color: rgba(241,210,138,.95);
+      font-size: 12px;
+    }
+    .namesBody{
+      max-height: 320px;
+      overflow:auto;
+      padding: 10px 12px 12px;
+    }
+    .namesGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 12px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .namesGrid .n{
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(215,181,109,.16);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .badgeTiny{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(215,181,109,.22);
+      background: rgba(215,181,109,.10);
+      color: rgba(241,210,138,.95);
+      font-weight: 900;
+      white-space:nowrap;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .namesGrid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>年終感恩餐會抽獎系統</h1>
+        <div class="sub">系統管理（抽獎前置作業：名單匯入/管理、獎項設定）</div>
+      </div>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn secondary" id="btnGoRaffle">返回抽獎主畫面</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- Prizes -->
+    <section class="card">
+      <div class="inner">
+        <h2><span class="chip">🎁 獎項管理</span></h2>
+        <div class="muted">可事先建立「獎項名稱 / 獎項內容 / 獎項數量」，抽獎現場直接從下拉式選單選擇即可。</div>
+
+        <label>獎項名稱</label>
+        <input type="text" id="prizeName" placeholder="例如：董事長獎" />
+
+        <label>獎項內容</label>
+        <input type="text" id="prizeContent" placeholder="例如：現金 1 萬元" />
+
+        <label>獎項數量</label>
+        <input type="number" id="prizeQty" min="1" value="1" />
+
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" id="btnAddPrize">新增/更新獎項</button>
+          <button class="btn danger" id="btnClearPrizes">清空所有獎項</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="muted">目前獎項清單</div>
+        <div class="list" id="prizeList"></div>
+      </div>
+    </section>
+
+    <!-- Participants -->
+    <section class="card">
+      <div class="inner">
+        <h2><span class="chip">📋 名單匯入與管理</span></h2>
+        <div class="muted">本版本已移除「組別」與「權重」：每行一位同仁姓名即可。若貼上 CSV，也會只取第一欄（姓名）。</div>
+
+        <label>1️⃣ 貼上名單（每行一位）</label>
+        <textarea id="manualInput" placeholder="王小明
+林小美
+張大偉"></textarea>
+
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" id="btnAddManual">加入/覆蓋名單</button>
+          <button class="btn danger" id="btnClearParticipants">清空名單</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <label>2️⃣ 或匯入 CSV 檔（UTF-8，可含表頭）</label>
+        <input type="file" id="fileInput" accept=".csv" />
+        <div class="muted" style="margin-top:8px;">
+          CSV 若含表頭（姓名/name）會自動略過第一列；僅取第一欄作為姓名。
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toggle">
+          <label style="margin:0; color:var(--text); font-weight:900;">
+            <input type="checkbox" id="allowRepeat" />
+            允許重複中獎（預設：不允許）
+          </label>
+          <button class="btn secondary mini" id="btnClearWon">清除所有人的「已中獎」狀態</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ✅ 1) 這裡加上：可一次顯示所有「目前有資格參加抽獎」的名單 -->
+        <div class="row" style="margin-top:8px;">
+          <button class="btn secondary" id="btnToggleEligible">顯示/隱藏「可抽獎名單」（昭公信）</button>
+        </div>
+
+        <div class="muted" id="stats" style="margin-top:10px;">目前名單人數：0</div>
+
+        <div class="namesPanel" id="eligiblePanel">
+          <div class="namesHead">
+            <div class="t">可抽獎名單</div>
+            <div class="badgeTiny" id="eligibleBadge">0 人</div>
+          </div>
+          <div class="namesBody">
+            <div class="muted" id="eligibleHint" style="margin-bottom:10px;"></div>
+            <div class="namesGrid" id="eligibleList"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+/* ========= Storage Keys ========= */
+const LS_PARTICIPANTS = 'raffle_participants_v2';
+const LS_PRIZES = 'raffle_prizes_v2';
+const LS_SETTINGS = 'raffle_settings_v2';
+
+let participants = [];
+let prizes = [];
+let editingPrizeId = null;
+
+/* ========= Helpers ========= */
+function loadJSON(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  }catch(e){ return fallback; }
+}
+function saveJSON(key,val){
+  localStorage.setItem(key, JSON.stringify(val));
+}
+function escapeHTML(str) {
+  return (str || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function normalizeName(name){
+  return String(name||'').trim().replace(/\s+/g,' ');
+}
+
+/* ========= Load ========= */
+function loadAll(){
+  participants = loadJSON(LS_PARTICIPANTS, []);
+  prizes = loadJSON(LS_PRIZES, []);
+  const settings = loadJSON(LS_SETTINGS, {allowRepeat:false});
+  document.getElementById('allowRepeat').checked = !!settings.allowRepeat;
+}
+
+/* ========= Navigation ========= */
+document.getElementById('btnGoRaffle').addEventListener('click', () => {
+  window.location.href = '抽獎程式v2_抽獎主畫面.html';
+});
+
+/* ========= Settings ========= */
+document.getElementById('allowRepeat').addEventListener('change', (e) => {
+  const settings = loadJSON(LS_SETTINGS, {allowRepeat:false});
+  settings.allowRepeat = !!e.target.checked;
+  saveJSON(LS_SETTINGS, settings);
+  updateStats();
+  renderEligibleList(); // ✅ 允許重複切換時，資格名單也跟著變
+});
+
+/* ========= Prizes ========= */
+const prizeNameEl = document.getElementById('prizeName');
+const prizeContentEl = document.getElementById('prizeContent');
+const prizeQtyEl = document.getElementById('prizeQty');
+const prizeListEl = document.getElementById('prizeList');
+
+/* ========= Participants ========= */
+const statsEl = document.getElementById('stats');
+
+/* ========= Eligible list (new) ========= */
+const btnToggleEligible = document.getElementById('btnToggleEligible');
+const eligiblePanel = document.getElementById('eligiblePanel');
+const eligibleListEl = document.getElementById('eligibleList');
+const eligibleBadge = document.getElementById('eligibleBadge');
+const eligibleHint = document.getElementById('eligibleHint');
+
+btnToggleEligible.addEventListener('click', () => {
+  const show = eligiblePanel.style.display !== 'block';
+  eligiblePanel.style.display = show ? 'block' : 'none';
+  if (show) renderEligibleList();
+});
+
+/* ========= Init ========= */
+loadAll();
+renderPrizeList();
+updateStats();
+renderEligibleList();
+
+/* ========= Prize actions ========= */
+document.getElementById('btnAddPrize').addEventListener('click', () => {
+  const name = normalizeName(prizeNameEl.value);
+  const content = normalizeName(prizeContentEl.value);
+  const qty = Math.max(1, Number(prizeQtyEl.value) || 1);
+
+  if (!name || !content){
+    alert('請輸入「獎項名稱」與「獎項內容」。');
+    return;
+  }
+
+  if (editingPrizeId){
+    const idx = prizes.findIndex(p => p.id === editingPrizeId);
+    if (idx >= 0){
+      prizes[idx] = { id: editingPrizeId, name, content, qty };
+    }
+    editingPrizeId = null;
+  }else{
+    prizes.push({ id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), name, content, qty });
+  }
+
+  saveJSON(LS_PRIZES, prizes);
+  prizeNameEl.value = '';
+  prizeContentEl.value = '';
+  prizeQtyEl.value = 1;
+  renderPrizeList();
+});
+
+document.getElementById('btnClearPrizes').addEventListener('click', () => {
+  if (!confirm('確定要清空所有獎項嗎？')) return;
+  prizes = [];
+  editingPrizeId = null;
+  saveJSON(LS_PRIZES, prizes);
+  renderPrizeList();
+});
+
+function renderPrizeList(){
+  prizeListEl.innerHTML = '';
+  if (!prizes.length){
+    prizeListEl.innerHTML = `<div class="item"><div class="desc">尚未建立獎項。</div></div>`;
+    return;
+  }
+
+  prizes.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <div>
+        <div class="title">${escapeHTML(p.name)} <span style="color:rgba(241,210,138,.92)">（名額 ${escapeHTML(String(p.qty))}）</span></div>
+        <div class="desc">${escapeHTML(p.content)}</div>
+      </div>
+      <div class="miniBtns">
+        <button class="btn secondary mini" data-act="edit" data-id="${escapeHTML(p.id)}">編輯</button>
+        <button class="btn danger mini" data-act="del" data-id="${escapeHTML(p.id)}">刪除</button>
+      </div>
+    `;
+    prizeListEl.appendChild(div);
+  });
+
+  prizeListEl.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      const act = e.currentTarget.getAttribute('data-act');
+      if (act === 'edit'){
+        const p = prizes.find(x => x.id === id);
+        if (!p) return;
+        editingPrizeId = id;
+        prizeNameEl.value = p.name;
+        prizeContentEl.value = p.content;
+        prizeQtyEl.value = p.qty;
+        window.scrollTo({top:0, behavior:'smooth'});
+      }else if (act === 'del'){
+        if (!confirm('確定要刪除此獎項嗎？')) return;
+        prizes = prizes.filter(x => x.id !== id);
+        if (editingPrizeId === id) editingPrizeId = null;
+        saveJSON(LS_PRIZES, prizes);
+        renderPrizeList();
+      }
+    });
+  });
+}
+
+/* ========= Participants import ========= */
+document.getElementById('btnAddManual').addEventListener('click', () => {
+  const text = document.getElementById('manualInput').value.trim();
+  if (!text){
+    alert('請先貼上名單內容。');
+    return;
+  }
+  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+
+  const newList = [];
+  const seen = new Set();
+  let idCounter = 1;
+
+  for (const line of lines){
+    // allow "姓名,..." pasted accidentally: only take first cell
+    const name = normalizeName(line.split(',')[0]);
+    if (!name) continue;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    newList.push({ id: idCounter++, name, hasWon:false });
+  }
+
+  if (!newList.length){
+    alert('解析名單失敗。請確認每行至少有一個姓名。');
+    return;
+  }
+
+  participants = newList;
+  saveJSON(LS_PARTICIPANTS, participants);
+  updateStats();
+  renderEligibleList();
+  alert('名單已更新，共 ' + participants.length + ' 人。');
+});
+
+document.getElementById('btnClearParticipants').addEventListener('click', () => {
+  if (!confirm('確定要清空名單嗎？')) return;
+
+  participants = [];
+  saveJSON(LS_PARTICIPANTS, participants);
+
+  // ✅ 清空畫面上貼上的名單
+  const manual = document.getElementById('manualInput');
+  if (manual) manual.value = '';
+
+  // ✅ 重置檔案選擇器
+  const file = document.getElementById('fileInput');
+  if (file) file.value = '';
+
+  updateStats();
+  renderEligibleList();
+  alert('名單已清空。');
+});
+
+document.getElementById('btnClearWon').addEventListener('click', () => {
+  if (!confirm('確定要清除所有人的「已中獎」狀態嗎？')) return;
+  participants = participants.map(p => ({...p, hasWon:false}));
+  saveJSON(LS_PARTICIPANTS, participants);
+  updateStats();
+  renderEligibleList();
+});
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => importFromCSVText(event.target.result);
+  reader.readAsText(file, 'utf-8');
+});
+
+function importFromCSVText(text){
+  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  if (!lines.length){
+    alert('CSV 檔案內容為空。');
+    return;
+  }
+
+  // detect header in first line (only check first column)
+  let startIndex = 0;
+  const first = (lines[0].split(',')[0] || '').toLowerCase();
+  if (first.includes('姓名') || first.includes('name')) startIndex = 1;
+
+  const newList = [];
+  const seen = new Set();
+  let idCounter = 1;
+
+  for (let i=startIndex;i<lines.length;i++){
+    const row = lines[i];
+    const name = normalizeName((row.split(',')[0] || ''));
+    if (!name) continue;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    newList.push({ id:idCounter++, name, hasWon:false });
+  }
+
+  if (!newList.length){
+    alert('未解析出有效名單，請確認 CSV 格式。');
+    return;
+  }
+
+  participants = newList;
+  saveJSON(LS_PARTICIPANTS, participants);
+  updateStats();
+  renderEligibleList();
+  alert('CSV 名單已載入，共 ' + participants.length + ' 人。');
+}
+
+/* ========= Stats + Eligible list ========= */
+function updateStats(){
+  const total = participants.length;
+  const won = participants.filter(p => p.hasWon).length;
+
+  const allowRepeat = !!loadJSON(LS_SETTINGS, {allowRepeat:false}).allowRepeat;
+  const eligible = allowRepeat ? total : (total - won);
+
+  statsEl.textContent = `目前名單人數：${total}（已中獎：${won}｜可抽獎：${eligible}）`;
+}
+
+function renderEligibleList(){
+  // 若面板尚未展開，也先把 badge/hint 更新，避免資訊落差
+  const allowRepeat = !!loadJSON(LS_SETTINGS, {allowRepeat:false}).allowRepeat;
+
+  const eligibleList = allowRepeat
+    ? participants.slice()
+    : participants.filter(p => !p.hasWon);
+
+  eligibleBadge.textContent = `${eligibleList.length} 人`;
+  eligibleHint.textContent = allowRepeat
+    ? '目前設定：允許重複中獎 → 所有人皆「有資格參加抽獎」。'
+    : '目前設定：不允許重複中獎 → 僅顯示「尚未中獎」者（可參加抽獎）。';
+
+  eligibleListEl.innerHTML = '';
+  if (!eligibleList.length){
+    eligibleListEl.innerHTML = `<div class="muted">目前沒有可抽獎名單（可能全部都已中獎）。</div>`;
+    return;
+  }
+
+  // 排序：照原始匯入順序（較符合昭公信），不做亂序
+  eligibleList.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'n';
+    d.textContent = p.name;
+    eligibleListEl.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
