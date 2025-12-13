@@ -239,6 +239,7 @@
       text-shadow: 0 12px 35px rgba(0,0,0,.55);
       z-index:3;
       margin-bottom: 10px;
+	  white-space: pre-line;
     }
 
     /* ✅ 需求 2：亂數顯示名字放大三倍（原 clamp 34~64 → 目標 102~120，避免太誇張用 clamp） */
@@ -482,7 +483,7 @@
       padding-bottom: 10px;
     }
 
-    /* ✅ 全螢幕：把右側「中獎紀錄」融入展示畫面內右側 */
+    /* ✅ 全螢幕：把右側「中獎記錄」融入展示畫面內右側 */
     .fsHistoryPanel{ display:none; }
     body.isFullscreen .fsHistoryPanel{
       display:block;
@@ -556,7 +557,7 @@
       overflow: hidden;
     }
 
-    /* ✅ 全螢幕：右側卡片（原本的中獎紀錄）隱藏 */
+    /* ✅ 全螢幕：右側卡片（原本的中獎記錄）隱藏 */
     body.isFullscreen #historyCard{ display:none; }
 
     @media (max-width: 980px){
@@ -739,24 +740,24 @@ body.isFullscreen .topbar .brand .sub{
           <div class="stage-particles" id="particles"></div>
           <div class="stage-spotlight"></div>
 		  
-          <!-- ✅ 全螢幕：把「中獎紀錄」融入此區右側 -->
+          <!-- ✅ 全螢幕：把「中獎記錄」融入此區右側 -->
           <aside class="fsHistoryPanel" id="fsHistoryPanel" aria-label="Fullscreen History">
             <div class="fsHistoryHead">
-              <div class="t">📑 中獎紀錄</div>
+              <div class="t">📑 中獎記錄</div>
               <div class="s" id="fsHistoryCount">0 筆</div>
             </div>
             <div class="fsHistoryBody">
               <table id="fsHistoryTable">
                 <thead>
                   <tr>
-                    <th style="width:86px;">時間</th>
+                    <th style="width:90px;">時間</th>
                     <th>獎項</th>
                     <th style="width:42%;">得獎者</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
-              <div class="empty" id="fsHistoryEmpty" style="display:none;">目前尚無中獎紀錄。</div>
+              <div class="empty" id="fsHistoryEmpty" style="display:none;">目前尚無中獎記錄。</div>
             </div>
           </aside>
 
@@ -776,8 +777,8 @@ body.isFullscreen .topbar .brand .sub{
     <section class="card" id="historyCard">
       <div class="inner">
           <div class="btnrow onlyInNormal" style="justify-content:flex-start; margin-bottom:10px;">
-          <button class="btn secondary" id="btnExport">匯出中獎紀錄 CSV</button>
-          <button class="btn danger" id="btnClearHistory">清空中獎紀錄</button>
+          <button class="btn secondary" id="btnExport">匯出中獎記錄 CSV</button>
+          <button class="btn danger" id="btnClearHistory">清空中獎記錄</button>
         </div>
 
         <div class="tablewrap">
@@ -792,7 +793,7 @@ body.isFullscreen .topbar .brand .sub{
             </thead>
             <tbody></tbody>
           </table>
-          <div class="empty" id="historyEmpty" style="display:none;">目前尚無中獎紀錄。</div>
+          <div class="empty" id="historyEmpty" style="display:none;">目前尚無中獎記錄。</div>
         </div>
 
         <div class="hint">
@@ -1016,7 +1017,7 @@ if (btnReset){
 }
 
 document.getElementById('btnExport').addEventListener('click', () => {
-  if (!history.length) { alert('目前尚無中獎紀錄。'); return; }
+  if (!history.length) { alert('目前尚無中獎記錄。'); return; }
   let csv = '時間,獎項名稱,獎項內容,得獎者\n';
   history.forEach(r => {
     const row = [
@@ -1039,7 +1040,7 @@ document.getElementById('btnExport').addEventListener('click', () => {
 });
 
 document.getElementById('btnClearHistory').addEventListener('click', () => {
-  if (!confirm('確定要清空所有中獎紀錄嗎？')) return;
+  if (!confirm('確定要清空所有中獎記錄嗎？')) return;
   history = [];
   saveJSON(LS_HISTORY, history);
   renderHistory();
@@ -1108,7 +1109,7 @@ function startDraw(){
 
   winnersListEl.innerHTML = '';
   rollingNameEl.textContent = '';
-  displayTitle.textContent = `${p.name} 抽獎進行中...`;
+  displayTitle.textContent = `${p.name} \n抽獎進行中...`;
 
   rollingCandidates = candidates.map(x => x.name);
 
@@ -1273,7 +1274,7 @@ function deleteHistoryRecord(id){
   const rec = history.find(x => x.id === id);
   if (!rec) return;
 
-  if (!confirm(`確定要刪除這筆紀錄？\n${rec.prizeName}｜${(rec.winners||[]).join('、')}`)) return;
+  if (!confirm(`確定要刪除這筆記錄？\n${rec.prizeName}｜${(rec.winners||[]).join('、')}`)) return;
 
   history = history.filter(x => x.id !== id);
   saveJSON(LS_HISTORY, history);
