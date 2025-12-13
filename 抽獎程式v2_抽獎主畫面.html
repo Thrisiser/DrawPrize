@@ -234,10 +234,10 @@
       margin-bottom: 10px;
     }
 
-    /* ✅ 需求 2：亂數顯示名字放大三倍（原 clamp 34~64 → 目標 102~192，避免太誇張用 clamp） */
+    /* ✅ 需求 2：亂數顯示名字放大三倍（原 clamp 34~64 → 目標 102~120，避免太誇張用 clamp） */
     #rollingName{
-      font-size: clamp(92px, 9.5vw, 170px);
-      font-weight: 900;
+      font-size: clamp(60px, 7.5vw, 90px);
+      font-weight: 700;
       letter-spacing: 4px;
       text-shadow:
         0 0 18px rgba(241,210,138,.55),
@@ -578,7 +578,12 @@
     <div class="topbar">
       <div class="brand">
         <h1>中華電信學院 年終感恩餐會 摸彩抽獎系統</h1>
-        <div class="sub">抽獎主畫面</div>
+        <div class="sub">          
+		    <div class="kv" id="prizeSummary">
+            <div class="k">目前獎項</div>
+            <div class="v" id="prizeSummaryText">尚未設定獎項。請先到「系統管理」新增獎項。</div>
+          </div>
+		</div>
       </div>
       <div class="btnrow onlyInNormal">
         <button class="btn" id="btnStartDraw">開始抽獎</button>
@@ -607,21 +612,18 @@
               <label>本獎項中獎名額</label>
               <input type="number" id="prizeQty" min="1" value="1" />
             </div>
+			<div class="hint" id="statusHint"></div>
           </div>
 
-          <div class="kv" id="prizeSummary">
-            <div class="k">目前獎項</div>
-            <div class="v" id="prizeSummaryText">尚未設定獎項。請先到「系統管理」新增獎項。</div>
-          </div>
 
-          <div class="hint" id="statusHint"></div>
+
+          
         </div>
-
-        <h2><span class="chip">🏆 現場抽獎展示畫面</span></h2>
 
         <div id="displayArea">
           <div class="stage-particles" id="particles"></div>
           <div class="stage-spotlight"></div>
+		  
 
           <!-- ✅ 全螢幕：把「中獎紀錄」融入此區右側 -->
           <aside class="fsHistoryPanel" id="fsHistoryPanel" aria-label="Fullscreen History">
