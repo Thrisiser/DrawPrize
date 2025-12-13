@@ -249,6 +249,27 @@
         </div>
 
         <div class="divider"></div>
+
+        <!-- ✅ 新增：獎項 CSV 匯入（可覆蓋/添加） -->
+        <div class="toggle" style="margin-top:0;">
+          <div class="badgeTiny">匯入模式</div>
+          <label style="margin:0; color:var(--text); font-weight:900;">
+            <input type="radio" name="prizeImportMode" value="overwrite" checked />
+            覆蓋（用匯入檔完整取代）
+          </label>
+          <label style="margin:0; color:var(--text); font-weight:900;">
+            <input type="radio" name="prizeImportMode" value="append" />
+            添加（保留既有，並合併新增）
+          </label>
+        </div>
+
+        <label style="margin-top:10px;">或匯入獎項 CSV 檔（UTF-8，可含表頭）</label>
+        <input type="file" id="prizeFileInput" accept=".csv" />
+        <div class="muted" style="margin-top:8px;">
+          建議欄位：獎項名稱,獎項內容,獎項數量（qty）。若有表頭（獎項/名稱/name、內容/content、數量/qty）會自動略過第一列。
+        </div>
+
+        <div class="divider"></div>
         <div class="muted">目前獎項清單</div>
         <div class="list" id="prizeList"></div>
       </div>
@@ -265,8 +286,21 @@
 林小美
 張大偉"></textarea>
 
+        <!-- ✅ 新增：名單匯入模式（覆蓋/添加） -->
+        <div class="toggle" style="margin-top:10px;">
+          <div class="badgeTiny">匯入模式</div>
+          <label style="margin:0; color:var(--text); font-weight:900;">
+            <input type="radio" name="participantImportMode" value="overwrite" checked />
+            覆蓋（用匯入內容完整取代）
+          </label>
+          <label style="margin:0; color:var(--text); font-weight:900;">
+            <input type="radio" name="participantImportMode" value="append" />
+            添加（保留既有，並合併新增）
+          </label>
+        </div>
+
         <div class="row" style="margin-top:10px;">
-          <button class="btn" id="btnAddManual">加入/覆蓋名單</button>
+          <button class="btn" id="btnAddManual">套用名單</button>
           <button class="btn danger" id="btnClearParticipants">清空名單</button>
         </div>
 
@@ -341,6 +375,33 @@ function escapeHTML(str) {
 }
 function normalizeName(name){
   return String(name||'').trim().replace(/\s+/g,' ');
+}
+
+function getRadioValue(name, fallback){
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : fallback;
+}
+
+// 超輕量 CSV 切割：支援最常見的逗號分隔與雙引號包裹（不追求 100% RFC）
+function splitCSVLine(line){
+  const out = [];
+  let cur = '';
+  let inQ = false;
+  for (let i=0;i<line.length;i++){
+    const ch = line[i];
+    if (ch === '"'){
+      // "" -> "
+      if (inQ && line[i+1] === '"'){ cur += '"'; i++; }
+      else inQ = !inQ;
+    }else if (ch === ',' && !inQ){
+      out.push(cur);
+      cur = '';
+    }else{
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map(s => String(s||'').trim());
 }
 
 /* ========= Load ========= */
@@ -475,38 +536,192 @@ function renderPrizeList(){
   });
 }
 
+/* ========= Prize import (CSV) ========= */
+function buildPrizesFromCSV(lines){
+  if (!lines || !lines.length) return [];
+
+  // header detect by first row
+  let startIndex = 0;
+  const firstRow = splitCSVLine(lines[0]).map(x => x.toLowerCase());
+  const h0 = firstRow[0] || '';
+  const h1 = firstRow[1] || '';
+  const h2 = firstRow[2] || '';
+  const looksLikeHeader =
+    h0.includes('獎') || h0.includes('名稱') || h0.includes('name') ||
+    h1.includes('內容') || h1.includes('content') ||
+    h2.includes('數量') || h2.includes('qty') || h2.includes('quantity');
+  if (looksLikeHeader) startIndex = 1;
+
+  const out = [];
+  const seenKey = new Set();
+
+  for (let i=startIndex;i<lines.length;i++){
+    const row = String(lines[i]||'').trim();
+    if (!row) continue;
+
+    const cells = splitCSVLine(row);
+    const name = normalizeName(cells[0] || '');
+    const content = normalizeName(cells[1] || '');
+    const qty = Math.max(1, Number(cells[2]) || 1);
+
+    if (!name || !content) continue;
+
+    const key = `${name}@@${content}`;
+    if (seenKey.has(key)) continue;
+    seenKey.add(key);
+
+    out.push({
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())),
+      name, content, qty
+    });
+  }
+  return out;
+}
+
+function mergePrizes(existing, incoming){
+  // 以「name+content」作為同一獎項的辨識；同 key 則用匯入值覆蓋 qty
+  const byKey = new Map();
+  existing.forEach(p => {
+    if (!p) return;
+    const name = normalizeName(p.name);
+    const content = normalizeName(p.content);
+    if (!name || !content) return;
+    const key = `${name}@@${content}`;
+    byKey.set(key, { ...p, name, content, qty: Math.max(1, Number(p.qty)||1) });
+  });
+
+  incoming.forEach(p => {
+    const name = normalizeName(p.name);
+    const content = normalizeName(p.content);
+    if (!name || !content) return;
+    const key = `${name}@@${content}`;
+    if (byKey.has(key)){
+      const old = byKey.get(key);
+      byKey.set(key, { ...old, name, content, qty: Math.max(1, Number(p.qty)||1) });
+    }else{
+      byKey.set(key, {
+        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random())),
+        name, content, qty: Math.max(1, Number(p.qty)||1)
+      });
+    }
+  });
+
+  return Array.from(byKey.values());
+}
+
+function applyPrizeImport(newList, mode){
+  if (!newList.length){
+    alert('未解析出有效獎項。請確認 CSV 格式（至少要有：獎項名稱、獎項內容）。');
+    return;
+  }
+
+  if (mode === 'append'){
+    prizes = mergePrizes(prizes, newList);
+  }else{
+    prizes = newList;
+  }
+  editingPrizeId = null;
+
+  saveJSON(LS_PRIZES, prizes);
+  renderPrizeList();
+  alert(`獎項已${mode==='append'?'添加':'更新'}，共 ${prizes.length} 筆。`);
+}
+
+document.getElementById('prizeFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => importPrizesFromCSVText(event.target.result);
+  reader.readAsText(file, 'utf-8');
+});
+
+function importPrizesFromCSVText(text){
+  const mode = getRadioValue('prizeImportMode', 'overwrite');
+  const lines = text.split(/\r?\n/).map(x => String(x||'').trim()).filter(Boolean);
+  if (!lines.length){
+    alert('CSV 檔案內容為空。');
+    return;
+  }
+  const newList = buildPrizesFromCSV(lines);
+  applyPrizeImport(newList, mode);
+}
+
 /* ========= Participants import ========= */
+function buildParticipantsFromLines(lines, startIndex){
+  const newList = [];
+  const seen = new Set();
+  let idCounter = 1;
+
+  for (let i=startIndex;i<lines.length;i++){
+    const line = String(lines[i]||'').trim();
+    if (!line) continue;
+
+    // allow "姓名,..." pasted accidentally: only take first cell
+    const name = normalizeName(splitCSVLine(line)[0] || '');
+    if (!name) continue;
+    if (seen.has(name)) continue;
+    seen.add(name);
+
+    newList.push({ id: idCounter++, name, hasWon:false });
+  }
+  return newList;
+}
+
+function mergeParticipants(existing, incoming){
+  // 以姓名去重；保留既有 hasWon 狀態
+  const byName = new Map();
+  let maxId = 0;
+
+  existing.forEach(p => {
+    if (!p || !p.name) return;
+    const name = normalizeName(p.name);
+    if (!name) return;
+    const idNum = Number(p.id);
+    if (Number.isFinite(idNum)) maxId = Math.max(maxId, idNum);
+    byName.set(name, { id: p.id, name, hasWon: !!p.hasWon });
+  });
+
+  incoming.forEach(p => {
+    const name = normalizeName(p.name);
+    if (!name) return;
+    if (byName.has(name)) return; // 已存在就略過（不改 hasWon）
+    maxId += 1;
+    byName.set(name, { id: maxId, name, hasWon:false });
+  });
+
+  // 依 id 排序（讓清單看起來穩定）
+  return Array.from(byName.values()).sort((a,b) => Number(a.id) - Number(b.id));
+}
+
+function applyParticipantsImport(newList, mode){
+  if (!newList.length){
+    alert('解析名單失敗。請確認每行至少有一個姓名。');
+    return;
+  }
+
+  if (mode === 'append'){
+    participants = mergeParticipants(participants, newList);
+  }else{
+    // overwrite
+    participants = newList;
+  }
+
+  saveJSON(LS_PARTICIPANTS, participants);
+  updateStats();
+  renderEligibleList();
+  alert(`名單已${mode==='append'?'添加':'更新'}，共 ${participants.length} 人。`);
+}
+
 document.getElementById('btnAddManual').addEventListener('click', () => {
   const text = document.getElementById('manualInput').value.trim();
   if (!text){
     alert('請先貼上名單內容。');
     return;
   }
-  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-
-  const newList = [];
-  const seen = new Set();
-  let idCounter = 1;
-
-  for (const line of lines){
-    // allow "姓名,..." pasted accidentally: only take first cell
-    const name = normalizeName(line.split(',')[0]);
-    if (!name) continue;
-    if (seen.has(name)) continue;
-    seen.add(name);
-    newList.push({ id: idCounter++, name, hasWon:false });
-  }
-
-  if (!newList.length){
-    alert('解析名單失敗。請確認每行至少有一個姓名。');
-    return;
-  }
-
-  participants = newList;
-  saveJSON(LS_PARTICIPANTS, participants);
-  updateStats();
-  renderEligibleList();
-  alert('名單已更新，共 ' + participants.length + ' 人。');
+  const mode = getRadioValue('participantImportMode', 'overwrite');
+  const lines = text.split(/\r?\n/);
+  const newList = buildParticipantsFromLines(lines, 0);
+  applyParticipantsImport(newList, mode);
 });
 
 document.getElementById('btnClearParticipants').addEventListener('click', () => {
@@ -545,7 +760,9 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 });
 
 function importFromCSVText(text){
-  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const mode = getRadioValue('participantImportMode', 'overwrite');
+
+  const lines = text.split(/\r?\n/).map(x => String(x||'').trim()).filter(Boolean);
   if (!lines.length){
     alert('CSV 檔案內容為空。');
     return;
@@ -553,32 +770,16 @@ function importFromCSVText(text){
 
   // detect header in first line (only check first column)
   let startIndex = 0;
-  const first = (lines[0].split(',')[0] || '').toLowerCase();
-  if (first.includes('姓名') || first.includes('name')) startIndex = 1;
+  const firstCell = (splitCSVLine(lines[0])[0] || '').toLowerCase();
+  if (firstCell.includes('姓名') || firstCell.includes('name')) startIndex = 1;
 
-  const newList = [];
-  const seen = new Set();
-  let idCounter = 1;
-
-  for (let i=startIndex;i<lines.length;i++){
-    const row = lines[i];
-    const name = normalizeName((row.split(',')[0] || ''));
-    if (!name) continue;
-    if (seen.has(name)) continue;
-    seen.add(name);
-    newList.push({ id:idCounter++, name, hasWon:false });
-  }
-
+  const newList = buildParticipantsFromLines(lines, startIndex);
   if (!newList.length){
     alert('未解析出有效名單，請確認 CSV 格式。');
     return;
   }
 
-  participants = newList;
-  saveJSON(LS_PARTICIPANTS, participants);
-  updateStats();
-  renderEligibleList();
-  alert('CSV 名單已載入，共 ' + participants.length + ' 人。');
+  applyParticipantsImport(newList, mode);
 }
 
 /* ========= Stats + Eligible list ========= */
@@ -601,22 +802,27 @@ function renderEligibleList(){
     : participants.filter(p => !p.hasWon);
 
   eligibleBadge.textContent = `${eligibleList.length} 人`;
-  eligibleHint.textContent = allowRepeat
-    ? '目前設定：允許重複中獎 → 所有人皆「有資格參加抽獎」。'
-    : '目前設定：不允許重複中獎 → 僅顯示「尚未中獎」者（可參加抽獎）。';
+
+  if (!participants.length){
+    eligibleHint.textContent = '尚未匯入名單。';
+  }else if (!allowRepeat){
+    const wonCount = participants.filter(p => p.hasWon).length;
+    eligibleHint.textContent = `目前顯示「尚未中獎」名單（已中獎 ${wonCount} 人）。`;
+  }else{
+    eligibleHint.textContent = '目前顯示「全部名單」（允許重複中獎已開啟）。';
+  }
 
   eligibleListEl.innerHTML = '';
   if (!eligibleList.length){
-    eligibleListEl.innerHTML = `<div class="muted">目前沒有可抽獎名單（可能全部都已中獎）。</div>`;
+    eligibleListEl.innerHTML = `<div class="muted">目前沒有可抽獎的人。</div>`;
     return;
   }
 
-  // 排序：照原始匯入順序（較符合昭公信），不做亂序
   eligibleList.forEach(p => {
-    const d = document.createElement('div');
-    d.className = 'n';
-    d.textContent = p.name;
-    eligibleListEl.appendChild(d);
+    const div = document.createElement('div');
+    div.className = 'n';
+    div.textContent = p.name;
+    eligibleListEl.appendChild(div);
   });
 }
 </script>
