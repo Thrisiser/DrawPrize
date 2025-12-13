@@ -5,6 +5,13 @@
   <title>中華電信學院 年終感恩餐會 摸彩抽獎系統｜抽獎主畫面</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+<!--
+本系統的中獎者是在停止抽獎瞬間，
+由系統以等機率隨機選出，
+動畫僅為視覺效果，
+每位參加者的中獎機率完全相同。
+-->
+
   <!-- ✅ Favicon：抽獎骰子 -->
   <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect x='6' y='6' width='52' height='52' rx='12' fill='%230e0f14' stroke='%23f1d28a' stroke-width='4'/%3E%3Cg fill='%23f1d28a'%3E%3Ccircle cx='24' cy='24' r='4'/%3E%3Ccircle cx='40' cy='40' r='4'/%3E%3Ccircle cx='24' cy='40' r='4'/%3E%3Ccircle cx='40' cy='24' r='4'/%3E%3C/g%3E%3C/svg%3E" />
@@ -570,6 +577,118 @@
         margin-top: 10px;
       }
     }
+	
+	/* ====== 🎬 金鐘金馬：主標題 + 目前獎項（一般模式右側、全螢幕回復下方） ====== */
+
+/* 一般模式：標題與目前獎項左右排列 */
+.topbar .brand{
+  display:flex;
+  flex-direction:row;
+  align-items:left;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 讓右側的「目前獎項」不要擠爆 */
+.topbar .brand .sub{
+  display:flex;
+  align-items:center;
+  margin-top: 0;            /* 原本 sub 可能有上距，這裡收掉 */
+  min-width: 420px;
+}
+
+/* 目前獎項卡片：更像頒獎典禮小金牌牌匾 */
+#prizeSummary{
+  margin-top: 0 !important;
+  margin-left: auto;
+  max-width: 100%;
+  border: 1px solid rgba(241,210,138,.28);
+  background:
+    radial-gradient(120px 60px at 25% 30%, rgba(255,255,255,.10), transparent 60%),
+    linear-gradient(180deg, rgba(241,210,138,.12), rgba(0,0,0,.22));
+  box-shadow: 0 14px 45px rgba(0,0,0,.45);
+}
+
+
+/* 主標題：黃金漸層 + 立體陰影 + 微亮邊 */
+.topbar .brand h1{
+  margin:0;
+  font-size: clamp(40px, 2.4vw, 46px); /* ✅ 字體加大 */
+  font-weight: 1000;
+  letter-spacing: 1.02px;
+  line-height: 1.06;
+  position: relative;
+  padding-right: 3px;
+  min-width: 0;
+
+  /* 金色漸層字（重點） */
+  background: linear-gradient(180deg,
+    #fff2c7 0%,
+    #f7d88b 18%,
+    #e9be59 40%,
+    #fff1c2 58%,
+    #c9972b 78%,
+    #fff0b8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  /* 立體與舞台光感 */
+  text-shadow:
+    0 2px 0 rgba(0,0,0,.55),
+    0 12px 30px rgba(0,0,0,.55),
+    0 0 18px rgba(241,210,138,.18);
+}
+
+/* 主標題：掃光（shimmer）效果 */
+.topbar .brand h1::after{
+  content:"";
+  position:absolute;
+  inset:-18% -30%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,.35) 45%,
+    rgba(255,255,255,.10) 55%,
+    transparent 100%
+  );
+  transform: rotate(12deg) translateX(-60%);
+  animation: titleShimmer 3.2s linear infinite;
+  mix-blend-mode: screen;
+  pointer-events:none;
+}
+
+@keyframes titleShimmer{
+  0%   { transform: rotate(12deg) translateX(-60%); opacity: .0; }
+  12%  { opacity: .65; }
+  35%  { opacity: .25; }
+  100% { transform: rotate(12deg) translateX(60%); opacity: 0; }
+}
+
+/* 小螢幕：改回上下排列（避免擠） */
+@media (max-width: 980px){
+  .topbar .brand{
+    flex-direction:column;
+    align-items:flex-start;
+    gap: 8px;
+  }
+  .topbar .brand .sub{
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* ✅ 全螢幕：維持「原本顯示方式」= 標題在上、目前獎項在下（就算 header 未來不隱藏也適用） */
+body.isFullscreen .topbar .brand{
+  flex-direction:column;
+  align-items:flex-start;
+  gap: 6px;
+}
+body.isFullscreen .topbar .brand .sub{
+  width: 90%;
+  min-width: 0;
+}
+	
   </style>
 </head>
 <body>
@@ -577,14 +696,13 @@
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <h1>中華電信學院 年終感恩餐會 摸彩抽獎系統</h1>
-        <div class="sub">          
-		    <div class="kv" id="prizeSummary">
-            <div class="k">目前獎項</div>
-            <div class="v" id="prizeSummaryText">尚未設定獎項。請先到「系統管理」新增獎項。</div>
-          </div>
-		</div>
-      </div>
+        <h1>中華電信學院年終感恩餐會摸彩抽獎系統</h1>
+			<div class="sub">
+			  <div class="kv" id="prizeSummary">
+				<div class="k">目前獎項</div>
+				<div class="v" id="prizeSummaryText">尚未設定獎項。請先到「系統管理」新增獎項。</div>
+			  </div>
+			</div>
       <div class="btnrow onlyInNormal">
         <button class="btn" id="btnStartDraw">開始抽獎</button>
         <button class="btn secondary" id="btnResetDraw">重置本輪結果</button>
@@ -615,16 +733,12 @@
 			<div class="hint" id="statusHint"></div>
           </div>
 
-
-
-          
         </div>
 
         <div id="displayArea">
           <div class="stage-particles" id="particles"></div>
           <div class="stage-spotlight"></div>
 		  
-
           <!-- ✅ 全螢幕：把「中獎紀錄」融入此區右側 -->
           <aside class="fsHistoryPanel" id="fsHistoryPanel" aria-label="Fullscreen History">
             <div class="fsHistoryHead">
@@ -997,13 +1111,22 @@ function startDraw(){
   displayTitle.textContent = `${p.name} 抽獎進行中...`;
 
   rollingCandidates = candidates.map(x => x.name);
-  let index = 0;
-  clearInterval(rollingTimer);
-  rollingTimer = setInterval(() => {
-    if (!rollingCandidates.length) return;
-    rollingNameEl.textContent = rollingCandidates[index % rollingCandidates.length];
-    index++;
-  }, 55);
+
+let lastIdx = -1;
+clearInterval(rollingTimer);
+rollingTimer = setInterval(() => {
+  const len = rollingCandidates.length;
+  if (!len) return;
+
+  let idx = Math.floor(Math.random() * len);
+  if (len > 1 && idx === lastIdx) {
+    idx = (idx + 1) % len; // 避免連續兩次同一個
+  }
+  lastIdx = idx;
+
+  rollingNameEl.textContent = rollingCandidates[idx];
+}, 55);
+
 
   const duration = 8000 + Math.random() * 4000; // 抽獎過程緊張氣氛等待時間：8~12 秒
 
