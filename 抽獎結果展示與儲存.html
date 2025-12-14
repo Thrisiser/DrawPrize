@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>中華電信學院年終感恩餐會-實體抽獎後手動登記顯示得獎者資訊</title>
+
+  <!-- ✅ favicon -->
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect x='6' y='6' width='52' height='52' rx='12' fill='%230e0f14' stroke='%23f1d28a' stroke-width='4'/%3E%3Cg fill='%23f1d28a'%3E%3Ccircle cx='24' cy='24' r='4'/%3E%3Ccircle cx='40' cy='40' r='4'/%3E%3Ccircle cx='24' cy='40' r='4'/%3E%3Ccircle cx='40' cy='24' r='4'/%3E%3C/g%3E%3C/svg%3E" />
+
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#121a33; --panel2:#0f1730; --text:#e9eefc; --muted:#a9b4d6;
+      --accent:#6aa6ff; --ok:#46d39a; --warn:#ffcf5a; --bad:#ff6a6a; --line:#26325d;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+      background: linear-gradient(160deg, #070a14, var(--bg));
+      color:var(--text);
+    }
+    a{ color:var(--accent); }
+    .wrap{ max-width:1200px; margin:0 auto; padding:18px; }
+    .grid{ display:grid; grid-template-columns: 1.2fr 1fr; gap:14px; align-items:start; }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+    h1,h2{ margin:0 0 10px 0; }
+    h1{ font-size:20px; }
+    h2{ font-size:16px; color:var(--muted); font-weight:650; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row > *{ flex: 0 0 auto; }
+    label{ font-size:13px; color:var(--muted); display:block; margin:8px 0 6px; }
+    input[type="text"], textarea, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      outline:none;
+    }
+    textarea{ min-height:88px; resize:vertical; }
+    button{
+      border:1px solid var(--line);
+      background: rgba(106,166,255,.15);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:650;
+    }
+    button:hover{ background: rgba(106,166,255,.22); }
+    button.ok{ background: rgba(70,211,154,.18); }
+    button.ok:hover{ background: rgba(70,211,154,.25); }
+    button.bad{ background: rgba(255,106,106,.14); }
+    button.bad:hover{ background: rgba(255,106,106,.20); }
+    .hint{ font-size:12px; color:var(--muted); margin-top:6px; line-height:1.5; }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:3px 10px; border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color:var(--muted); font-size:12px;
+    }
+    .pill strong{ color:var(--text); font-weight:750; }
+    .small{ 
+	font-size:26px; color:var(--muted); 
+	text-shadow:
+        0 2px 0 rgba(0,0,0,.55),
+        0 12px 30px rgba(0,0,0,.55),
+        0 0 18px rgba(241,210,138,.18);
+	background: linear-gradient(180deg,
+    #fff2c7 0%,
+    #f7d88b 18%,
+    #e9be59 40%,
+    #fff1c2 58%,
+    #c9972b 78%,
+    #fff0b8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+	}
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ border-bottom:1px solid rgba(38,50,93,.7); padding:8px 6px; vertical-align:top; }
+    th{ text-align:left; font-size:12px; color:var(--muted); font-weight:750; }
+    td{ font-size:13px; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .right{ text-align:right; }
+    .divider{ height:1px; background: rgba(38,50,93,.8); margin:12px 0; }
+    .warnbox{
+      border:1px dashed rgba(255,207,90,.6);
+      background: rgba(255,207,90,.08);
+      padding:10px 12px;
+      border-radius:12px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    /* =======================
+       Stage view (舞台畫面)
+       ======================= */
+
+    .stage{
+      height: 100vh;
+      width: 100vw;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+      margin:0;
+    }
+
+    .stageCard{
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: 0;
+      background:
+        radial-gradient(1200px 600px at 20% 10%, rgba(106,166,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 80% 30%, rgba(70,211,154,.12), transparent 55%),
+        radial-gradient(800px 420px at 55% 90%, rgba(255,220,150,.10), transparent 60%),
+        rgba(0,0,0,.32);
+      box-shadow: none;
+
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+
+      padding: clamp(12px, 2.0vh, 28px) clamp(12px, 2.2vw, 34px);
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .stageTop{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-top: clamp(35px, 50px, 50px);
+	  margin-bottom: clamp(20px, 25px, 25px);
+    }
+
+    .stageTitle{
+      margin:0;
+      font-size: clamp(60px, 4.0vmin, 100px);
+      font-weight: 1000;
+      letter-spacing: 1.03px;
+      line-height: 1.10;
+      position: relative;
+      padding-right: 3px;
+      min-width: 0;
+
+      background: linear-gradient(180deg,
+        #fff2c7 0%,
+        #f7d88b 18%,
+        #e9be59 40%,
+        #fff1c2 58%,
+        #c9972b 78%,
+        #fff0b8 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+
+      text-shadow:
+        0 2px 0 rgba(0,0,0,.55),
+        0 12px 30px rgba(0,0,0,.55),
+        0 0 18px rgba(241,210,138,.18);
+    }
+
+    .stageTitle::after{
+      content:"";
+      position:absolute;
+      inset:-18% -30%;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,.35) 45%,
+        rgba(255,255,255,.10) 55%,
+        transparent 100%
+      );
+      transform: rotate(12deg) translateX(-60%);
+      animation: titleShimmer 3.2s linear infinite;
+      mix-blend-mode: screen;
+      pointer-events:none;
+    }
+
+    @keyframes titleShimmer{
+      0%   { transform: rotate(12deg) translateX(-60%); opacity: .0; }
+      12%  { opacity: .65; }
+      35%  { opacity: .25; }
+      100% { transform: rotate(12deg) translateX(60%); opacity: 0; }
+    }
+
+    /* ✅ 獎項/內容分欄顯示：外層容器 */
+    .bigPrizeWrap{
+      margin-top: clamp(10px, 2.0vh, 26px);
+      position: relative;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: clamp(6px, 1.2vh, 14px);
+    }
+
+    /* ✅ 第一行：獎項（大字） */
+    .bigPrizeTitle{
+      font-size: clamp(80px, 8.0vmin, 160px);
+      font-weight: 1000;
+      letter-spacing: .08em;
+      line-height: 1.10;
+
+      background: linear-gradient(180deg,
+        #fff2c7 0%,
+        #f7d88b 18%,
+        #e9be59 40%,
+        #fff1c2 58%,
+        #c9972b 78%,
+        #fff0b8 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+
+      text-shadow:
+        0 3px 0 rgba(0,0,0,.55),
+        0 18px 36px rgba(0,0,0,.55),
+        0 0 22px rgba(241,210,138,.35);
+
+      animation: prizeGlow 3.5s ease-in-out infinite alternate;
+      position:relative;
+    }
+
+    /* ✅ 第二行：內容（約 80% 大小） */
+    .bigPrizeDesc{
+      font-size: clamp(70px, 6vmin, 100px);
+      font-weight: 900;
+      letter-spacing: .06em;
+      line-height: 1.12;
+
+      background: linear-gradient(180deg,
+        #fff2c7 0%,
+        #f7d88b 18%,
+        #e9be59 40%,
+        #fff1c2 58%,
+        #c9972b 78%,
+        #fff0b8 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+
+      text-shadow:
+        0 2px 0 rgba(0,0,0,.55),
+        0 14px 30px rgba(0,0,0,.55),
+        0 0 18px rgba(241,210,138,.28);
+
+      position:relative;
+      opacity: .98;
+    }
+
+    @keyframes prizeGlow{
+      0%   { filter: brightness(1); }
+      100% { filter: brightness(1.15); }
+    }
+
+    /* 亮光掃過：在外層做一次就好 */
+    .bigPrizeWrap::after{
+      content:"";
+      position:absolute;
+      inset:-20% -40%;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,.45) 45%,
+        rgba(255,255,255,.15) 55%,
+        transparent 100%
+      );
+      transform: rotate(12deg) translateX(-70%);
+      animation: prizeShimmer 4.2s linear infinite;
+      mix-blend-mode: screen;
+      pointer-events:none;
+    }
+
+    @keyframes prizeShimmer{
+      0%   { transform: rotate(12deg) translateX(-70%); opacity: 0; }
+      15%  { opacity: .8; }
+      35%  { opacity: .25; }
+      100% { transform: rotate(12deg) translateX(70%); opacity: 0; }
+    }
+
+    .bigWinners{
+      margin-top: clamp(14px, 3.0vh, 34px);
+      display:flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: clamp(12px, 1.8vh, 24px);
+      line-height:1.20;
+      font-weight: 800;
+
+      flex: 1 1 auto;
+      align-content: center;
+      width: 100%;
+      padding: 0 clamp(8px, 2vw, 24px) clamp(10px, 2vh, 22px);
+    }
+
+    .wItem{
+      display:inline-flex;
+      align-items:center;
+      gap: 14px;
+
+      min-width: min(280px, 92vw);
+
+      padding: clamp(14px, 2.0vh, 22px) clamp(18px, 2.2vw, 28px);
+      border-radius: 22px;
+
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.25)),
+        rgba(0,0,0,.35);
+
+      border: 1px solid rgba(255,215,140,.45);
+
+      box-shadow:
+        0 18px 40px rgba(0,0,0,.6),
+        inset 0 0 18px rgba(255,220,150,.18);
+    }
+
+    .winnerId{
+      display:inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: clamp(18px, 2.6vmin, 34px);
+      font-weight: 900;
+
+      background: linear-gradient(180deg,#fff6cf,#e3b44a);
+      color: #3b2a00;
+
+      box-shadow:
+        0 4px 10px rgba(0,0,0,.45),
+        inset 0 0 6px rgba(255,255,255,.5);
+    }
+
+    .winnerName{
+      font-size: clamp(30px, 4.2vmin, 64px);
+      font-weight: 900;
+      letter-spacing: .12em;
+      color: #fff;
+
+      text-shadow:
+        0 2px 0 rgba(0,0,0,.55),
+        0 10px 22px rgba(0,0,0,.6),
+        0 0 16px rgba(255,220,150,.25);
+    }
+
+    .stageFlash{
+      position:absolute;
+      inset:-30%;
+      pointer-events:none;
+      opacity:0;
+      background:
+        radial-gradient(closest-side at 50% 40%, rgba(255,245,210,.85), transparent 55%),
+        radial-gradient(closest-side at 30% 25%, rgba(255,230,150,.55), transparent 60%),
+        radial-gradient(closest-side at 70% 30%, rgba(255,255,255,.35), transparent 65%);
+      mix-blend-mode: screen;
+      filter: blur(1px);
+    }
+
+    .stageFlash.boom{
+      animation: flashBoom 900ms ease-out both;
+    }
+
+    @keyframes flashBoom{
+      0%   { opacity: 0; transform: scale(.92); filter: blur(2px) brightness(.9); }
+      10%  { opacity: 1; }
+      35%  { opacity: .88; transform: scale(1.02); filter: blur(1px) brightness(1.35); }
+      100% { opacity: 0; transform: scale(1.10); filter: blur(3px) brightness(1.05); }
+    }
+
+    .winnerCard{ opacity:0; transform: translateY(14px) scale(.98); }
+    .winnerCard.reveal{ animation: winnerReveal 650ms cubic-bezier(.2,.9,.2,1) both; }
+
+    @keyframes winnerReveal{
+      0%   { opacity:0; transform: translateY(18px) scale(.98); filter: blur(2px); }
+      60%  { opacity:1; transform: translateY(-2px) scale(1.01); filter: blur(0px); }
+      100% { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* ✅ 右上角小喇叭按鈕（預設有聲，按下變靜音） */
+    .audioToggle{
+      position:absolute;
+      right: 18px;
+      top: 18px;
+      z-index: 6;
+      display: inline-flex;
+    }
+    .audioToggle button{
+      border: 1px solid rgba(255,215,140,.55);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+    .audioToggle button:hover{
+      background: rgba(0,0,0,.45);
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(() => {
+  const isStage = new URLSearchParams(location.search).get("stage") === "1";
+
+  // --- Storage keys
+  const KEY = {
+    participants: "manual_award.participants.v1",
+    prizes:       "manual_award.prizes.v1",
+    history:      "manual_award.history.v1",
+    stageState:   "manual_award.stageState.v1",
+    audioMuted:   "manual_award.audioMuted.v1",
+  };
+
+  // --- Cross-window realtime sync
+  const bc = ("BroadcastChannel" in window) ? new BroadcastChannel("manual_award_channel_v1") : null;
+  const post = (type, payload) => {
+    const msg = { type, payload, at: Date.now() };
+    if (bc) bc.postMessage(msg);
+    localStorage.setItem("__manual_award_ping__", JSON.stringify(msg));
+    localStorage.removeItem("__manual_award_ping__");
+  };
+
+  const loadJSON = (k, fallback) => {
+    try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : fallback; }
+    catch { return fallback; }
+  };
+  const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+  // --- CSV helpers
+  const splitCSVLine = (line) => {
+    const out = [];
+    let cur = "", inQ = false;
+    for (let i=0;i<line.length;i++){
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"'){ cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === "," && !inQ) {
+        out.push(cur.trim());
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    out.push(cur.trim());
+    return out;
+  };
+
+  const parseCSV = (text) => {
+    const lines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n")
+      .map(x => x.trim()).filter(x => x.length && !x.startsWith("#"));
+    if (!lines.length) return { header: [], rows: [] };
+    const header = splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g,""));
+    const rows = lines.slice(1).map(line => splitCSVLine(line).map(v => v.replace(/^"|"$/g,"")));
+    return { header, rows };
+  };
+
+  const downloadText = (filename, text) => {
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 0);
+  };
+
+  // --- Utils
+  const normalize = (s) => (s ?? "").toString().trim();
+  const padId = (s) => normalize(s) ? normalize(s) : "";
+
+  // ✅ 把 prize 字串拆成 {title, desc}
+  // - 支援 "標題\n內容"
+  // - 支援 "標題｜內容" / "標題|內容"（保險）
+  const splitPrize = (prizeRaw) => {
+    const raw = (prizeRaw ?? "").toString();
+    const s = raw.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+
+    // 優先用換行拆
+    if (s.includes("\n")){
+      const [t, ...rest] = s.split("\n");
+      const title = normalize(t);
+      const desc = normalize(rest.join("\n"));
+      return { title: title || "等待公布…", desc };
+    }
+
+    // 其次用分隔符拆
+    const m = s.match(/^(.*?)\s*(?:\||｜)\s*(.+)$/);
+    if (m){
+      const title = normalize(m[1]);
+      const desc = normalize(m[2]);
+      return { title: title || "等待公布…", desc };
+    }
+
+    return { title: normalize(s) || "等待公布…", desc: "" };
+  };
+
+  const buildIndex = (participants) => {
+    const byId = new Map();
+    const byName = new Map();
+    const all = [];
+    for (const p of participants){
+      const id = padId(p.id);
+      const name = normalize(p.name);
+      if (!name && !id) continue;
+      const obj = { id, name };
+      all.push(obj);
+      if (id) byId.set(id, obj);
+      if (name){
+        if (!byName.has(name)) byName.set(name, []);
+        byName.get(name).push(obj);
+      }
+    }
+    return { byId, byName, all };
+  };
+
+  const resolveToken = (token) => {
+    token = normalize(token);
+    if (!token) return { ok:false, raw:"", reason:"空白" };
+
+    const isId = /^[0-9]+$/.test(token);
+    if (isId){
+      const found = state.index.byId.get(token);
+      if (found) return { ok:true, id: found.id, name: found.name, raw: token };
+
+      const num = String(parseInt(token,10));
+      for (const [k,v] of state.index.byId.entries()){
+        if (/^[0-9]+$/.test(k) && String(parseInt(k,10)) === num){
+          return { ok:true, id: v.id, name: v.name, raw: token, note:`以 ${v.id} 配對` };
+        }
+      }
+      return { ok:false, raw: token, reason:"找不到此序號" };
+    }
+
+    const exact = state.index.byName.get(token);
+    if (exact && exact.length === 1){
+      return { ok:true, id: exact[0].id, name: exact[0].name, raw: token };
+    }
+    if (exact && exact.length > 1){
+      return { ok:true, id: exact[0].id, name: exact[0].name, raw: token, note:`同名 ${exact.length} 人，已取第一筆` };
+    }
+
+    const hits = state.index.all.filter(p => p.name && p.name.includes(token));
+    if (hits.length === 1){
+      return { ok:true, id: hits[0].id, name: hits[0].name, raw: token, note:"以部分姓名配對" };
+    }
+    if (hits.length > 1){
+      return { ok:false, raw: token, reason:`部分姓名命中 ${hits.length} 人（請輸入更完整）` };
+    }
+    return { ok:false, raw: token, reason:"找不到此姓名" };
+  };
+
+  // --- State
+  const state = {
+    participants: loadJSON(KEY.participants, []),
+    prizes: loadJSON(KEY.prizes, []),
+    history: loadJSON(KEY.history, []),
+    stageState: loadJSON(KEY.stageState, { prize: "", winners: [], updatedAt: 0 }),
+    index: null,
+    uiSelectedPrize: loadJSON("manual_award.uiSelectedPrize.v1", ""),
+    audioMuted: loadJSON(KEY.audioMuted, false),
+  };
+  state.index = buildIndex(state.participants);
+
+  const saveAll = () => {
+    saveJSON(KEY.participants, state.participants);
+    saveJSON(KEY.prizes, state.prizes);
+    saveJSON(KEY.history, state.history);
+    saveJSON(KEY.stageState, state.stageState);
+    saveJSON("manual_award.uiSelectedPrize.v1", state.uiSelectedPrize);
+    saveJSON(KEY.audioMuted, state.audioMuted);
+  };
+
+  // --- UI helper
+  const el = (tag, attrs={}, ...children) => {
+    const node = document.createElement(tag);
+    for (const [k,v] of Object.entries(attrs)){
+      if (k === "class") node.className = v;
+      else if (k === "html") node.innerHTML = v;
+      else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+      else if (v !== null && v !== undefined) node.setAttribute(k, v);
+    }
+    for (const c of children){
+      if (c === null || c === undefined) continue;
+      node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    }
+    return node;
+  };
+
+  const fmtTime = (ts) => {
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  const escapeCSV = (s) => {
+    s = (s ?? "").toString();
+    if (/[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+    return s;
+  };
+
+  /* =======================
+     Stage view
+     ======================= */
+  let stageUI = null;
+  let lastAnnouncedAt = 0;
+
+  let stageRenderedPrize = "";
+  let stageRenderedCount = 0;
+  let stageRenderedKeys = [];
+
+  let playingPrize = "";
+  let audioLoopBound = false;
+  let audioStartedForCurrentPrize = false; // ✅ 本獎項是否已由第一位得獎者啟動音效
+
+  const AUDIO_START_SEC = 0;
+  const AUDIO_PLAY_SEC  = 116;
+
+  const stopAudio = () => {
+    if (!stageUI?.audio) return;
+    const a = stageUI.audio;
+    try{
+      a.pause();
+      a.currentTime = Math.max(0, AUDIO_START_SEC);
+    }catch{}
+  };
+
+  const startLoopAudio = async () => {
+    if (!stageUI?.audio) return;
+    if (state.audioMuted) return;
+
+    const a = stageUI.audio;
+    a.muted = !!state.audioMuted;
+
+    const start = Math.max(0, AUDIO_START_SEC);
+    const end   = Math.max(start + 0.1, start + AUDIO_PLAY_SEC);
+
+    if (!audioLoopBound){
+      a.addEventListener("timeupdate", () => {
+        if (a.currentTime >= (end - 0.05)){
+          a.currentTime = start;
+        }
+      });
+      a.addEventListener("ended", () => {
+        a.currentTime = start;
+        if (!a.muted){
+          a.play().catch(() => {});
+        }
+      });
+      audioLoopBound = true;
+    }
+
+    if (Math.abs(a.currentTime - start) > 0.2 && (a.currentTime < start || a.currentTime > end)){
+      a.currentTime = start;
+    }
+
+    try{
+      await a.play();
+      return true;
+    }catch{
+      return false;
+    }
+  };
+
+  const updateAudioBtn = () => {
+    if (!stageUI?.audioBtn) return;
+    stageUI.audioBtn.textContent = state.audioMuted ? "🔇" : "🔊";
+    stageUI.audioBtn.title = state.audioMuted ? "目前靜音（點一下開啟音效）" : "音效開啟（點一下靜音）";
+    stageUI.audioBtn.setAttribute("aria-pressed", state.audioMuted ? "true" : "false");
+  };
+
+  const toggleMute = async () => {
+    state.audioMuted = !state.audioMuted;
+    saveAll();
+
+    if (stageUI?.audio){
+      stageUI.audio.muted = !!state.audioMuted;
+    }
+
+    if (state.audioMuted){
+      stopAudio();
+    } else {
+      await startLoopAudio();
+    }
+    updateAudioBtn();
+  };
+
+  const boomFlash = () => {
+    if (!stageUI?.flash) return;
+    stageUI.flash.classList.remove("boom");
+    void stageUI.flash.offsetWidth;
+    stageUI.flash.classList.add("boom");
+  };
+
+  const makeWinnerItem = (w, animate=false) => {
+    const item = el("span", { class: "wItem winnerCard" },
+      el("span", { class:"mono winnerId" }, w.id ? w.id : "--"),
+      el("span", { class:"winnerName" }, w.name ? w.name : "(未命名)")
+    );
+    if (!animate) item.classList.add("reveal");
+    else setTimeout(() => item.classList.add("reveal"), 0);
+    return item;
+  };
+
+  const syncStageWinnersIncremental = (st) => {
+    const list = Array.isArray(st.winners) ? st.winners : [];
+    const prize = st.prize || "";
+
+    const keyOf = (w) => `${w?.id || ""}||${w?.name || ""}`;
+    const keys = list.map(keyOf);
+
+    const needRebuild =
+      prize !== stageRenderedPrize ||
+      list.length < stageRenderedCount ||
+      stageRenderedKeys.some((k, i) => keys[i] !== k);
+
+    if (needRebuild){
+      stageUI.winners.innerHTML = "";
+      if (!list.length){
+        stageUI.winners.appendChild(el("div", { class:"small" }, "即將抽出獎項 敬請期待"));
+        stageRenderedPrize = prize;
+        stageRenderedCount = 0;
+        stageRenderedKeys = [];
+        return;
+      }
+      list.forEach(w => stageUI.winners.appendChild(makeWinnerItem(w, false)));
+      stageRenderedPrize = prize;
+      stageRenderedCount = list.length;
+      stageRenderedKeys = keys.slice();
+      return;
+    }
+
+    if (list.length === stageRenderedCount + 1){
+      const wNew = list[list.length - 1];
+      const firstChild = stageUI.winners.firstChild;
+      if (firstChild && firstChild.classList && firstChild.classList.contains("small")){
+        stageUI.winners.innerHTML = "";
+      }
+      stageUI.winners.appendChild(makeWinnerItem(wNew, true));
+      stageRenderedCount = list.length;
+      stageRenderedKeys = keys.slice();
+      return;
+    }
+
+    stageUI.winners.innerHTML = "";
+    if (!list.length){
+      stageUI.winners.appendChild(el("div", { class:"small" }, "即將抽出獎項 敬請期待"));
+      stageRenderedPrize = prize;
+      stageRenderedCount = 0;
+      stageRenderedKeys = [];
+      return;
+    }
+    list.forEach(w => stageUI.winners.appendChild(makeWinnerItem(w, false)));
+    stageRenderedPrize = prize;
+    stageRenderedCount = list.length;
+    stageRenderedKeys = keys.slice();
+  };
+
+  const setStagePrize = (prizeRaw) => {
+    const { title, desc } = splitPrize(prizeRaw);
+    stageUI.prizeTitle.textContent = title || "等待公布…";
+    stageUI.prizeDesc.textContent = desc || "";
+    stageUI.prizeDesc.style.display = desc ? "" : "none";
+  };
+
+  const announceStageAnimated = async (st) => {
+    if (!stageUI) return;
+    if (!st?.updatedAt || st.updatedAt <= lastAnnouncedAt) return;
+    lastAnnouncedAt = st.updatedAt;
+
+    boomFlash();
+
+    // ✅ 更新獎項/內容
+    setStagePrize(st.prize || "");
+
+    // ✅ 音效：切換獎項只停音不播放；送出「第一位得獎者」才開始播放
+if (stageUI.audio) {
+  const newPrize = st.prize || "";
+  const prizeChanged = (newPrize !== playingPrize);
+
+  // 先判斷 winners（這次舞台狀態）
+  const list = Array.isArray(st.winners) ? st.winners : [];
+  const hasAnyWinner = list.length > 0;
+
+  if (prizeChanged) {
+    // 換獎項：更新 playingPrize，重置啟動旗標，停音（不自動播放）
+    playingPrize = newPrize;
+    audioStartedForCurrentPrize = false;
+    stopAudio();
+  }
+
+  // 若此獎項已經出現第一位得獎者，且尚未啟動過音效 => 開始播放
+  if (!state.audioMuted && playingPrize && hasAnyWinner && !audioStartedForCurrentPrize) {
+    const ok = await startLoopAudio();
+    if (ok) audioStartedForCurrentPrize = true;
+  }
+
+  // 若目前沒有得獎者（例如切換獎項/清空），就確保不在播
+  if (!hasAnyWinner) {
+    stopAudio();
+  }
+}
+
+    syncStageWinnersIncremental(st);
+  };
+
+  const renderStage = () => {
+    const app = document.getElementById("app");
+    app.innerHTML = "";
+    const st = state.stageState || { prize:"", winners:[], updatedAt:0 };
+
+    const top = el("div", { class:"stageTop" },
+      el("div", { class:"stageTitle" }, "中華電信學院年終感恩餐會抽獎摸彩活動")
+    );
+
+    const prizeTitle = el("div", { class:"bigPrizeTitle", id:"stagePrizeTitle" }, "");
+    const prizeDesc  = el("div", { class:"bigPrizeDesc",  id:"stagePrizeDesc"  }, "");
+    const prizeWrap  = el("div", { class:"bigPrizeWrap", id:"stagePrizeWrap" }, prizeTitle, prizeDesc);
+
+    const winners = el("div", { class:"bigWinners", id:"stageWinners" });
+    const flash = el("div", { class:"stageFlash", id:"stageFlash" });
+    const audio = el("audio", { id:"stageAudio", preload:"auto", src:"抽獎緊張配樂.mp3" });
+
+    const audioBtn = el("button", { onclick: toggleMute, type:"button", "aria-pressed":"false" }, "🔊");
+    const audioToggle = el("div", { class:"audioToggle" }, audioBtn);
+
+    const stageCard = el("div", { class:"stageCard" },
+      audioToggle,
+      flash,
+      top,
+      prizeWrap,
+      winners,
+      audio
+    );
+
+    app.appendChild(el("div", { class:"stage" }, stageCard));
+
+    stageUI = { prizeTitle, prizeDesc, winners, flash, audio, audioBtn };
+
+    audio.muted = !!state.audioMuted;
+    updateAudioBtn();
+
+    setStagePrize(st.prize || "");
+
+    stageRenderedPrize = st.prize || "";
+    stageRenderedCount = 0;
+    stageRenderedKeys = [];
+    syncStageWinnersIncremental(st);
+
+    playingPrize = st.prize || "";
+    if (!state.audioMuted && playingPrize){
+      startLoopAudio();
+    }
+
+    announceStageAnimated(st);
+  };
+
+  /* =======================
+     Admin view
+     ======================= */
+
+  const rebuildStageFromHistory = () => {
+    const hist = Array.isArray(state.history) ? state.history : [];
+    if (!hist.length){
+      state.stageState = { prize:"", winners:[], updatedAt: 0 };
+      return;
+    }
+
+    const last = hist[hist.length - 1];
+    const prize = last?.prize || "";
+
+    const winnersRev = [];
+    for (let i = hist.length - 1; i >= 0; i--){
+      const r = hist[i];
+      if (!r || r.prize !== prize) break;
+      const ws = Array.isArray(r.winners) ? r.winners : [];
+      for (const w of ws) winnersRev.push({ id: w.id || "", name: w.name || "" });
+    }
+    winnersRev.reverse();
+
+    state.stageState = { prize, winners: winnersRev, updatedAt: Date.now() };
+  };
+
+  // ✅ 核心：後台切換獎項時，立刻同步到舞台（更貼近實際流程）
+  // - 切換到新獎項：舞台顯示新獎項，清空得獎者，並觸發動畫/音效重置
+  // - 若同獎項重選：不重置（避免誤清空）
+  const pushSelectedPrizeToStage = (prizeValue) => {
+    const prize = normalize(prizeValue);
+    const prevPrize = state.stageState?.prize || "";
+
+    if (!prize) return;
+
+    // 同獎項就不做事（避免不小心清空）
+    if (prevPrize === prize) return;
+
+    const ts = Date.now();
+    state.stageState = { prize, winners: [], updatedAt: ts };
+    saveAll();
+
+    // 先提示舞台停一下音樂（避免在換獎項時音樂亂跳）
+    post("prize_selected", { prize });
+
+    // 再送出真正的舞台狀態更新（讓前台立即更新獎項/清空得獎者）
+    post("update_stage", state.stageState);
+  };
+
+  const renderAdmin = () => {
+    const app = document.getElementById("app");
+    app.innerHTML = "";
+
+    const openStage = () => {
+      const url = new URL(location.href);
+      url.searchParams.set("stage","1");
+      window.open(url.toString(), "stage_screen");
+    };
+
+    const importParticipantsFile = async (file) => {
+      const text = await file.text();
+      const { header, rows } = parseCSV(text);
+
+      const h = header.map(x => normalize(x));
+      const colId = h.findIndex(x => ["序號","編號","id","ID","No","NO","no"].includes(x));
+      const colName = h.findIndex(x => ["姓名","name","Name","NAME"].includes(x));
+
+      const list = [];
+      for (const r of rows){
+        if (!r.length) continue;
+        let id = "", name = "";
+        if (colName >= 0 && colId >= 0){
+          id = padId(r[colId] ?? "");
+          name = normalize(r[colName] ?? "");
+        } else if (colName >= 0){
+          name = normalize(r[colName] ?? "");
+        } else if (r.length >= 2){
+          id = padId(r[0] ?? "");
+          name = normalize(r[1] ?? "");
+        } else {
+          name = normalize(r[0] ?? "");
+        }
+        if (id || name) list.push({ id, name });
+      }
+
+      state.participants = list;
+      state.index = buildIndex(state.participants);
+      saveAll();
+      post("sync", {});
+      alert(`已匯入名單：${state.participants.length} 筆`);
+      renderAdmin();
+    };
+
+    const importPrizesFile = async (file) => {
+      const text = await file.text();
+      const { header, rows } = parseCSV(text);
+      const h = header.map(x => normalize(x));
+      const colPrize = h.findIndex(x => ["獎項","獎項名稱","prize","Prize","name","名稱"].includes(x));
+      const list = [];
+
+      for (const r of rows){
+        let title = "";
+        if (colPrize >= 0) title = normalize(r[colPrize] ?? "");
+        else title = normalize(r[0] ?? "");
+
+        const desc = normalize(r[1] ?? "");
+        const value = desc ? `${title}\n${desc}` : title;
+
+        if (normalize(value)) list.push(value);
+      }
+
+      state.prizes = list;
+      saveAll();
+      post("sync", {});
+      alert(`已匯入獎項：${state.prizes.length} 個`);
+      renderAdmin();
+    };
+
+    const addOneDraw = (prize, winner, warnings=[]) => {
+      const ts = Date.now();
+
+      const prevPrize = state.stageState?.prize || "";
+      const prevWinners = Array.isArray(state.stageState?.winners) ? state.stageState.winners : [];
+
+      let nextWinners = [];
+      if (prevPrize && prevPrize === prize) nextWinners = [...prevWinners];
+      else nextWinners = [];
+
+      nextWinners.push({ id: winner.id || "", name: winner.name || "" });
+
+      state.stageState = { prize, winners: nextWinners, updatedAt: ts };
+
+      state.history.push({
+        ts,
+        prize,
+        winners: [{ id: winner.id || "", name: winner.name || "" }],
+        warnings
+      });
+
+      saveAll();
+      post("update_stage", state.stageState);
+      post("update_history", state.history);
+    };
+
+    const undoLast = () => {
+      if (!state.history.length){
+        alert("目前沒有可以回退的紀錄");
+        return;
+      }
+      const last = state.history[state.history.length - 1];
+      const lastInfo = `${last.prize} / ${(last.winners?.[0]?.id || "--")} ${(last.winners?.[0]?.name || "")}`.trim();
+
+      if (!confirm(`確定要回退上一抽？\n\n${lastInfo}\n\n（將同步更新舞台畫面與歷史紀錄）`)) return;
+
+      state.history.pop();
+      rebuildStageFromHistory();
+      saveAll();
+
+      post("update_stage", state.stageState);
+      post("update_history", state.history);
+
+      renderAdmin();
+    };
+
+    const exportHistory = () => {
+      const lines = [];
+      lines.push(["時間","獎項","得獎序號","得獎姓名","備註"].map(escapeCSV).join(","));
+      for (const r of state.history){
+        const winners = r.winners || [];
+        const warn = (r.warnings || []).join(" | ");
+        if (!winners.length){
+          lines.push([fmtTime(r.ts), r.prize, "", "", warn].map(escapeCSV).join(","));
+        } else {
+          for (const w of winners){
+            lines.push([fmtTime(r.ts), r.prize, w.id || "", w.name || "", warn].map(escapeCSV).join(","));
+          }
+        }
+      }
+      const filename = `得獎歷史_${new Date().toISOString().slice(0,10)}.csv`;
+      downloadText(filename, lines.join("\n"));
+    };
+
+    const clearHistory = () => {
+      if (!confirm("確定要清空得獎歷史？（無法復原）")) return;
+      state.history = [];
+      state.stageState = { prize:"", winners:[], updatedAt:0 };
+      saveAll();
+      post("update_stage", state.stageState);
+      post("update_history", state.history);
+      renderAdmin();
+    };
+
+    const submitManual = () => {
+      const prize = normalize(document.getElementById("prizeSel").value);
+      const input = normalize(document.getElementById("winnerInput").value);
+
+      if (!prize){
+        alert("請先選擇獎項");
+        return;
+      }
+      if (!input){
+        alert("請輸入得獎者（序號或姓名）");
+        return;
+      }
+
+      const rawTokens = input.split(/[,，\n\t ]+/).map(t => normalize(t)).filter(Boolean);
+      if (!rawTokens.length){
+        alert("請輸入得獎者（序號或姓名）");
+        return;
+      }
+
+      const warnings = [];
+      if (rawTokens.length > 1){
+        warnings.push(`一次輸入多筆已偵測到 ${rawTokens.length} 筆；為符合逐一抽獎，本次僅送出第一筆：${rawTokens[0]}`);
+      }
+
+      const token = rawTokens[0];
+      const r = resolveToken(token);
+      if (!r.ok){
+        alert(`${token}: ${r.reason}`);
+        return;
+      }
+      if (r.note) warnings.push(`${token}: ${r.note}`);
+
+      state.uiSelectedPrize = prize;
+      saveAll();
+
+      addOneDraw(prize, { id: r.id || "", name: r.name || "" }, warnings);
+
+      document.getElementById("winnerInput").value = "";
+      document.getElementById("resolvePreview").innerHTML = "";
+
+      renderAdmin();
+      setTimeout(() => document.getElementById("winnerInput")?.focus(), 0);
+    };
+
+    const previewResolve = () => {
+      const input = normalize(document.getElementById("winnerInput").value);
+      const box = document.getElementById("resolvePreview");
+      if (!input){ box.innerHTML = ""; return; }
+      const rawTokens = input.split(/[,，\n\t ]+/).map(t => normalize(t)).filter(Boolean);
+
+      const ok = [];
+      const bad = [];
+      for (const t of rawTokens){
+        const r = resolveToken(t);
+        if (r.ok) ok.push(r);
+        else bad.push(r);
+      }
+
+      const parts = [];
+      if (rawTokens.length > 1){
+        parts.push(`<div class="warnbox">⚠️ 建議一次只輸入 1 位（逐一抽獎逐一公布）。本次送出會只取第一筆：<span class="mono">${rawTokens[0]}</span></div>`);
+      }
+      if (ok.length){
+        parts.push(`<div class="small" style="margin-top:8px">可配對：</div>`);
+        parts.push(`<div style="margin-top:6px; line-height:1.7;">${
+          ok.map((x, idx) => {
+            const extra = (idx === 0) ? ` <span class="pill"><strong>本次送出</strong></span>` : "";
+            return `<span class="pill"><strong class="mono">${(x.id||"--")}</strong> ${x.name||""}</span>${extra}`;
+          }).join(" ")
+        }</div>`);
+      }
+      if (bad.length){
+        parts.push(`<div style="margin-top:10px" class="small">無法配對：</div>`);
+        parts.push(`<div style="margin-top:6px" class="warnbox">${
+          bad.map(x => `• <span class="mono">${x.raw}</span>：${x.reason}`).join("<br>")
+        }</div>`);
+      }
+      box.innerHTML = parts.join("");
+    };
+
+    const countP = state.participants.length;
+    const countPr = state.prizes.length;
+
+    const left = el("div", { class:"card" },
+      el("h1", {}, "中華電信學院年終感恩餐會-實體抽獎後手動登記顯示得獎者資訊"),
+      el("div", { class:"row" },
+        el("span", { class:"pill" }, "名單：", el("strong", {}, `${countP} 筆`)),
+        el("span", { class:"pill" }, "獎項：", el("strong", {}, `${countPr} 個`)),
+        el("span", { class:"pill" }, "歷史：", el("strong", {}, `${state.history.length} 筆`)),
+        el("button", { onclick: openStage }, "開啟舞台畫面（投影用）")
+      ),
+      el("div", { class:"divider" }),
+
+      el("h2", {}, "1) 匯入資料（可用 CSV）"),
+
+      el("label", {}, "參與者名單 CSV（支援：序號,姓名 或 只有姓名）"),
+      el("div", { class:"row" },
+        el("input", { id:"pFile", type:"file", accept:".csv,text/csv" }),
+        el("button", {
+          onclick: () => {
+            const f = document.getElementById("pFile").files?.[0];
+            if (!f) return alert("請先選擇名單 CSV 檔");
+            importParticipantsFile(f);
+          }
+        }, "匯入名單")
+      ),
+      el("div", { class:"hint" }, "CSV 第一列可有標題：序號,姓名。也可直接兩欄或單欄。"),
+
+      el("label", {}, "獎項 CSV（支援兩欄：獎項,內容；也支援單欄）"),
+      el("div", { class:"row" },
+        el("input", { id:"prFile", type:"file", accept:".csv,text/csv" }),
+        el("button", {
+          onclick: () => {
+            const f = document.getElementById("prFile").files?.[0];
+            if (!f) return alert("請先選擇獎項 CSV 檔");
+            importPrizesFile(f);
+          }
+        }, "匯入獎項")
+      ),
+
+      el("div", { class:"divider" }),
+
+      el("h2", {}, "2) 登記得獎者（逐一抽獎逐一公布）"),
+
+      el("label", {}, "獎項（切換後會立刻同步到舞台，並清空舞台得獎者，準備下一抽）"),
+      (() => {
+        const s = el("select", {
+          id:"prizeSel",
+          onchange: (e) => {
+            state.uiSelectedPrize = normalize(e.target.value);
+            saveAll();
+
+            // ✅ 關鍵：後台切換下拉 => 前台舞台同步更新獎項
+            pushSelectedPrizeToStage(state.uiSelectedPrize);
+          }
+        },
+          el("option", { value:"" }, "— 請選擇獎項 —"),
+          ...state.prizes.map(v => {
+            const { title, desc } = splitPrize(v);
+            const label = desc ? `${title}（${desc}）` : title;
+            return el("option", { value:v }, label);
+          })
+        );
+        setTimeout(() => { s.value = state.uiSelectedPrize || ""; }, 0);
+        return s;
+      })(),
+
+      el("label", {}, "得獎者（建議一次輸入 1 位：序號 / 姓名 / 部分姓名）"),
+      el("input", {
+        id:"winnerInput",
+        type:"text",
+        placeholder:'例如：013 或 王小明 或 小明',
+        oninput: previewResolve
+      }),
+      el("div", { id:"resolvePreview", style:"margin-top:10px" }),
+
+      el("div", { class:"row", style:"margin-top:12px" },
+        el("button", { class:"ok", onclick: submitManual }, "送出（公布到舞台 + 寫入歷史）"),
+        el("button", { class:"bad", onclick: undoLast }, "Undo（回退上一抽）"),
+        el("button", {
+          onclick: () => {
+            document.getElementById("winnerInput").value = "";
+            document.getElementById("resolvePreview").innerHTML = "";
+          }
+        }, "清空輸入")
+      ),
+
+      el("div", { class:"hint" },
+        "配對規則：數字視為序號；文字先比對完整姓名，再比對部分姓名。若部分姓名命中多人，會要求你輸入更完整。"
+      )
+    );
+
+    const right = el("div", { class:"card" },
+      el("h2", {}, "得獎歷史（最新在前）"),
+      el("div", { class:"row" },
+        el("button", { onclick: exportHistory }, "匯出 CSV"),
+        el("button", { class:"bad", onclick: clearHistory }, "清空歷史")
+      ),
+      el("div", { class:"hint" }, "匯出格式：每位得獎者一列（含時間、獎項、序號、姓名、備註）。"),
+      el("div", { class:"divider" }),
+      (() => {
+        const t = el("table", {});
+        t.appendChild(el("thead", {}, el("tr", {},
+          el("th", {}, "時間"),
+          el("th", {}, "獎項"),
+          el("th", {}, "得獎者")
+        )));
+        const tb = el("tbody", {});
+        const list = [...state.history].slice().reverse().slice(0, 50);
+        for (const r of list){
+          tb.appendChild(el("tr", {},
+            el("td", { class:"mono" }, fmtTime(r.ts)),
+            el("td", {}, r.prize),
+            el("td", {}, (r.winners||[]).map(w => `${w.id || "--"} ${w.name || ""}`.trim()).join("、"))
+          ));
+        }
+        if (!list.length){
+          tb.appendChild(el("tr", {}, el("td", { colspan:"3", class:"small" }, "尚無紀錄")));
+        }
+        t.appendChild(tb);
+        return t;
+      })()
+    );
+
+    app.appendChild(el("div", { class:"wrap" }, el("div", { class:"grid" }, left, right)));
+
+    window.onkeydown = (e) => {
+      const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+      const isUndo = (isMac ? e.metaKey : e.ctrlKey) && (e.key === "z" || e.key === "Z");
+      if (isUndo){
+        const tag = (document.activeElement?.tagName || "").toLowerCase();
+        if (tag !== "input" && tag !== "textarea"){
+          e.preventDefault();
+          undoLast();
+        }
+      }
+    };
+  };
+
+  // --- Realtime sync listeners
+  const onMessage = (msg) => {
+    if (!msg || !msg.type) return;
+
+    state.participants = loadJSON(KEY.participants, state.participants);
+    state.prizes       = loadJSON(KEY.prizes, state.prizes);
+    state.history      = loadJSON(KEY.history, state.history);
+    state.stageState   = loadJSON(KEY.stageState, state.stageState);
+    state.uiSelectedPrize = loadJSON("manual_award.uiSelectedPrize.v1", state.uiSelectedPrize);
+    state.audioMuted   = loadJSON(KEY.audioMuted, state.audioMuted);
+    state.index = buildIndex(state.participants);
+
+    if (isStage){
+      if (!stageUI) renderStage();
+
+      if (msg.type === "prize_selected"){
+        // 只做“切換瞬間”的停音，真正畫面更新靠 stageState / updatedAt
+        stopAudio();
+      }
+
+      // ✅ 不管是 update_stage / storage / sync，都以 stageState 為準進行刷新
+      announceStageAnimated(state.stageState);
+
+      if (stageUI?.audio){
+        stageUI.audio.muted = !!state.audioMuted;
+      }
+      updateAudioBtn();
+    } else {
+      renderAdmin();
+    }
+  };
+
+  if (bc) bc.onmessage = (e) => onMessage(e.data);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "__manual_award_ping__" ||
+        [KEY.participants, KEY.prizes, KEY.history, KEY.stageState, KEY.audioMuted].includes(e.key) ||
+        e.key === "manual_award.uiSelectedPrize.v1"){
+      onMessage({ type:"storage" });
+    }
+  });
+
+  // --- Initial render
+  if (isStage) renderStage();
+  else renderAdmin();
+})();
+</script>
+</body>
+</html>
