@@ -69,24 +69,24 @@
       color:var(--muted); font-size:12px;
     }
     .pill strong{ color:var(--text); font-weight:750; }
-    .small{ 
-	font-size:26px; color:var(--muted); 
-	text-shadow:
+    .small{
+      font-size:26px; color:var(--muted);
+      text-shadow:
         0 2px 0 rgba(0,0,0,.55),
         0 12px 30px rgba(0,0,0,.55),
         0 0 18px rgba(241,210,138,.18);
-	background: linear-gradient(180deg,
-    #fff2c7 0%,
-    #f7d88b 18%,
-    #e9be59 40%,
-    #fff1c2 58%,
-    #c9972b 78%,
-    #fff0b8 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-	}
+      background: linear-gradient(180deg,
+        #fff2c7 0%,
+        #f7d88b 18%,
+        #e9be59 40%,
+        #fff1c2 58%,
+        #c9972b 78%,
+        #fff0b8 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
     table{ width:100%; border-collapse:collapse; }
     th,td{ border-bottom:1px solid rgba(38,50,93,.7); padding:8px 6px; vertical-align:top; }
     th{ text-align:left; font-size:12px; color:var(--muted); font-weight:750; }
@@ -148,7 +148,7 @@
       gap:16px;
       flex-wrap:wrap;
       margin-top: clamp(35px, 50px, 50px);
-	  margin-bottom: clamp(20px, 25px, 25px);
+      margin-bottom: clamp(20px, 25px, 25px);
     }
 
     .stageTitle{
@@ -575,15 +575,35 @@
   };
 
   // --- State
+  // ✅ stageState 新增 status：
+  //    - "waiting"：等待公布（顯示等待公布…/敬請期待 + 停止音樂）
+  //    - "active" ：正常抽獎（顯示獎項 + 允許播放音樂）
   const state = {
     participants: loadJSON(KEY.participants, []),
     prizes: loadJSON(KEY.prizes, []),
     history: loadJSON(KEY.history, []),
-    stageState: loadJSON(KEY.stageState, { prize: "", winners: [], updatedAt: 0 }),
+    stageState: loadJSON(KEY.stageState, { prize: "", winners: [], status: "waiting", updatedAt: 0 }),
     index: null,
     uiSelectedPrize: loadJSON("manual_award.uiSelectedPrize.v1", ""),
     audioMuted: loadJSON(KEY.audioMuted, false),
   };
+
+  // ✅ 兼容舊資料：若沒 status，視為 active（因為舊版有獎項/得獎者就是在抽獎）
+  if (!state.stageState || typeof state.stageState !== "object") {
+    state.stageState = { prize:"", winners:[], status:"waiting", updatedAt:0 };
+  } else {
+    if (!("status" in state.stageState)) {
+      const hasPrize = !!normalize(state.stageState.prize || "");
+      state.stageState.status = hasPrize ? "active" : "waiting";
+    }
+    if (!("winners" in state.stageState) || !Array.isArray(state.stageState.winners)) {
+      state.stageState.winners = [];
+    }
+    if (!("updatedAt" in state.stageState)) {
+      state.stageState.updatedAt = 0;
+    }
+  }
+
   state.index = buildIndex(state.participants);
 
   const saveAll = () => {
@@ -635,7 +655,6 @@
 
   let playingPrize = "";
   let audioLoopBound = false;
-  let audioStartedForCurrentPrize = false; // ✅ 本獎項是否已由第一位得獎者啟動音效
 
   const AUDIO_START_SEC = 0;
   const AUDIO_PLAY_SEC  = 116;
@@ -650,8 +669,8 @@
   };
 
   const startLoopAudio = async () => {
-    if (!stageUI?.audio) return;
-    if (state.audioMuted) return;
+    if (!stageUI?.audio) return false;
+    if (state.audioMuted) return false;
 
     const a = stageUI.audio;
     a.muted = !!state.audioMuted;
@@ -704,7 +723,11 @@
     if (state.audioMuted){
       stopAudio();
     } else {
-      await startLoopAudio();
+      // 只有在 active + 有獎項時才自動嘗試播放
+      const st = state.stageState || {};
+      if ((st.status || "waiting") === "active" && normalize(st.prize || "")){
+        await startLoopAudio();
+      }
     }
     updateAudioBtn();
   };
@@ -787,6 +810,16 @@
     stageUI.prizeDesc.style.display = desc ? "" : "none";
   };
 
+  // ✅ 等待模式顯示（用於「暫停頒獎」）
+  const setStageWaiting = () => {
+    if (!stageUI) return;
+    stageUI.prizeTitle.textContent = "等待公布…";
+    stageUI.prizeDesc.textContent = "";
+    stageUI.prizeDesc.style.display = "none";
+    stageUI.winners.innerHTML = "";
+    stageUI.winners.appendChild(el("div", { class:"small" }, "即將抽出獎項 敬請期待"));
+  };
+
   const announceStageAnimated = async (st) => {
     if (!stageUI) return;
     if (!st?.updatedAt || st.updatedAt <= lastAnnouncedAt) return;
@@ -794,44 +827,48 @@
 
     boomFlash();
 
-    // ✅ 更新獎項/內容
+    const status = (st.status || "waiting");
+
+    // ✅ 若是等待模式：停音 + 顯示等待畫面
+    if (status === "waiting"){
+      playingPrize = "";
+      stopAudio();
+      setStageWaiting();
+      stageRenderedPrize = "";
+      stageRenderedCount = 0;
+      stageRenderedKeys = [];
+      return;
+    }
+
+    // ✅ 正常抽獎模式：更新獎項/內容
     setStagePrize(st.prize || "");
 
-    // ✅ 音效：切換獎項只停音不播放；送出「第一位得獎者」才開始播放
-if (stageUI.audio) {
-  const newPrize = st.prize || "";
-  const prizeChanged = (newPrize !== playingPrize);
+    // ✅ 音效規則（新需求）：
+    //    後台切換獎項（stageState.prize 改變）=> 立刻開始播放（不再等第一位得獎者）
+    if (stageUI.audio) {
+      const newPrize = st.prize || "";
+      const prizeChanged = (newPrize !== playingPrize);
 
-  // 先判斷 winners（這次舞台狀態）
-  const list = Array.isArray(st.winners) ? st.winners : [];
-  const hasAnyWinner = list.length > 0;
+      if (prizeChanged) {
+        playingPrize = newPrize;
+        stopAudio(); // 換獎項先回到起點
+      }
 
-  if (prizeChanged) {
-    // 換獎項：更新 playingPrize，重置啟動旗標，停音（不自動播放）
-    playingPrize = newPrize;
-    audioStartedForCurrentPrize = false;
-    stopAudio();
-  }
+      if (!state.audioMuted && normalize(playingPrize)) {
+        await startLoopAudio();
+      } else {
+        stopAudio();
+      }
+    }
 
-  // 若此獎項已經出現第一位得獎者，且尚未啟動過音效 => 開始播放
-  if (!state.audioMuted && playingPrize && hasAnyWinner && !audioStartedForCurrentPrize) {
-    const ok = await startLoopAudio();
-    if (ok) audioStartedForCurrentPrize = true;
-  }
-
-  // 若目前沒有得獎者（例如切換獎項/清空），就確保不在播
-  if (!hasAnyWinner) {
-    stopAudio();
-  }
-}
-
+    // ✅ 得獎者區塊：切換獎項時通常是空 => 顯示「敬請期待」
     syncStageWinnersIncremental(st);
   };
 
   const renderStage = () => {
     const app = document.getElementById("app");
     app.innerHTML = "";
-    const st = state.stageState || { prize:"", winners:[], updatedAt:0 };
+    const st = state.stageState || { prize:"", winners:[], status:"waiting", updatedAt:0 };
 
     const top = el("div", { class:"stageTop" },
       el("div", { class:"stageTitle" }, "中華電信學院年終感恩餐會抽獎摸彩活動")
@@ -864,16 +901,22 @@ if (stageUI.audio) {
     audio.muted = !!state.audioMuted;
     updateAudioBtn();
 
-    setStagePrize(st.prize || "");
+    // 初始顯示
+    if ((st.status || "waiting") === "waiting") {
+      setStageWaiting();
+      stopAudio();
+      playingPrize = "";
+    } else {
+      setStagePrize(st.prize || "");
+      stageRenderedPrize = st.prize || "";
+      stageRenderedCount = 0;
+      stageRenderedKeys = [];
+      syncStageWinnersIncremental(st);
 
-    stageRenderedPrize = st.prize || "";
-    stageRenderedCount = 0;
-    stageRenderedKeys = [];
-    syncStageWinnersIncremental(st);
-
-    playingPrize = st.prize || "";
-    if (!state.audioMuted && playingPrize){
-      startLoopAudio();
+      playingPrize = st.prize || "";
+      if (!state.audioMuted && normalize(playingPrize)){
+        startLoopAudio();
+      }
     }
 
     announceStageAnimated(st);
@@ -886,7 +929,7 @@ if (stageUI.audio) {
   const rebuildStageFromHistory = () => {
     const hist = Array.isArray(state.history) ? state.history : [];
     if (!hist.length){
-      state.stageState = { prize:"", winners:[], updatedAt: 0 };
+      state.stageState = { prize:"", winners:[], status:"waiting", updatedAt: 0 };
       return;
     }
 
@@ -902,29 +945,32 @@ if (stageUI.audio) {
     }
     winnersRev.reverse();
 
-    state.stageState = { prize, winners: winnersRev, updatedAt: Date.now() };
+    state.stageState = { prize, winners: winnersRev, status:"active", updatedAt: Date.now() };
   };
 
-  // ✅ 核心：後台切換獎項時，立刻同步到舞台（更貼近實際流程）
-  // - 切換到新獎項：舞台顯示新獎項，清空得獎者，並觸發動畫/音效重置
-  // - 若同獎項重選：不重置（避免誤清空）
+  // ✅ 後台切換獎項：立刻同步到舞台（並立刻播放音樂）
   const pushSelectedPrizeToStage = (prizeValue) => {
     const prize = normalize(prizeValue);
     const prevPrize = state.stageState?.prize || "";
+    const prevStatus = state.stageState?.status || "waiting";
 
     if (!prize) return;
 
-    // 同獎項就不做事（避免不小心清空）
-    if (prevPrize === prize) return;
+    // 同獎項 + 也不是 waiting => 不做事（避免不小心清空）
+    if (prevPrize === prize && prevStatus === "active") return;
 
     const ts = Date.now();
-    state.stageState = { prize, winners: [], updatedAt: ts };
+    state.stageState = { prize, winners: [], status:"active", updatedAt: ts };
     saveAll();
 
-    // 先提示舞台停一下音樂（避免在換獎項時音樂亂跳）
-    post("prize_selected", { prize });
+    post("update_stage", state.stageState);
+  };
 
-    // 再送出真正的舞台狀態更新（讓前台立即更新獎項/清空得獎者）
+  // ✅ 新功能：後台一鍵「暫停頒獎 / 等待公布」
+  const pushPauseToStage = () => {
+    const ts = Date.now();
+    state.stageState = { prize:"", winners:[], status:"waiting", updatedAt: ts };
+    saveAll();
     post("update_stage", state.stageState);
   };
 
@@ -1001,15 +1047,16 @@ if (stageUI.audio) {
       const ts = Date.now();
 
       const prevPrize = state.stageState?.prize || "";
+      const prevStatus = state.stageState?.status || "waiting";
       const prevWinners = Array.isArray(state.stageState?.winners) ? state.stageState.winners : [];
 
       let nextWinners = [];
-      if (prevPrize && prevPrize === prize) nextWinners = [...prevWinners];
+      if (prevStatus === "active" && prevPrize && prevPrize === prize) nextWinners = [...prevWinners];
       else nextWinners = [];
 
       nextWinners.push({ id: winner.id || "", name: winner.name || "" });
 
-      state.stageState = { prize, winners: nextWinners, updatedAt: ts };
+      state.stageState = { prize, winners: nextWinners, status:"active", updatedAt: ts };
 
       state.history.push({
         ts,
@@ -1064,7 +1111,7 @@ if (stageUI.audio) {
     const clearHistory = () => {
       if (!confirm("確定要清空得獎歷史？（無法復原）")) return;
       state.history = [];
-      state.stageState = { prize:"", winners:[], updatedAt:0 };
+      state.stageState = { prize:"", winners:[], status:"waiting", updatedAt:0 };
       saveAll();
       post("update_stage", state.stageState);
       post("update_history", state.history);
@@ -1195,15 +1242,19 @@ if (stageUI.audio) {
 
       el("h2", {}, "2) 登記得獎者（逐一抽獎逐一公布）"),
 
-      el("label", {}, "獎項（切換後會立刻同步到舞台，並清空舞台得獎者，準備下一抽）"),
+      // ✅ 新增：暫停頒獎按鈕
+      el("div", { class:"row", style:"margin-top:6px" },
+        el("button", { class:"bad", onclick: pushPauseToStage }, "⏸ 暫停頒獎（前台等待公布 + 停止音樂）"),
+        el("span", { class:"hint" }, "（中場休息/尚未要抽時可按）")
+      ),
+
+      el("label", {}, "獎項（切換後會立刻同步到舞台、清空舞台得獎者，並立刻開始播放音樂）"),
       (() => {
         const s = el("select", {
           id:"prizeSel",
           onchange: (e) => {
             state.uiSelectedPrize = normalize(e.target.value);
             saveAll();
-
-            // ✅ 關鍵：後台切換下拉 => 前台舞台同步更新獎項
             pushSelectedPrizeToStage(state.uiSelectedPrize);
           }
         },
@@ -1300,17 +1351,19 @@ if (stageUI.audio) {
     state.stageState   = loadJSON(KEY.stageState, state.stageState);
     state.uiSelectedPrize = loadJSON("manual_award.uiSelectedPrize.v1", state.uiSelectedPrize);
     state.audioMuted   = loadJSON(KEY.audioMuted, state.audioMuted);
+
+    // 兼容舊資料：補 status
+    if (state.stageState && typeof state.stageState === "object" && !("status" in state.stageState)) {
+      const hasPrize = !!normalize(state.stageState.prize || "");
+      state.stageState.status = hasPrize ? "active" : "waiting";
+    }
+
     state.index = buildIndex(state.participants);
 
     if (isStage){
       if (!stageUI) renderStage();
 
-      if (msg.type === "prize_selected"){
-        // 只做“切換瞬間”的停音，真正畫面更新靠 stageState / updatedAt
-        stopAudio();
-      }
-
-      // ✅ 不管是 update_stage / storage / sync，都以 stageState 為準進行刷新
+      // ✅ 任何更新都以 stageState 為準進行刷新
       announceStageAnimated(state.stageState);
 
       if (stageUI?.audio){
