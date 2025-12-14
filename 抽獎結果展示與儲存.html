@@ -1072,13 +1072,13 @@
 
     const undoLast = () => {
       if (!state.history.length){
-        alert("目前沒有可以回退的紀錄");
+        alert("目前沒有可以回退的記錄");
         return;
       }
       const last = state.history[state.history.length - 1];
       const lastInfo = `${last.prize} / ${(last.winners?.[0]?.id || "--")} ${(last.winners?.[0]?.name || "")}`.trim();
 
-      if (!confirm(`確定要回退上一抽？\n\n${lastInfo}\n\n（將同步更新舞台畫面與歷史紀錄）`)) return;
+      if (!confirm(`確定要回退上一抽？\n\n${lastInfo}\n\n（將同步更新舞台畫面與歷史記錄）`)) return;
 
       state.history.pop();
       rebuildStageFromHistory();
@@ -1319,7 +1319,7 @@
           ));
         }
         if (!list.length){
-          tb.appendChild(el("tr", {}, el("td", { colspan:"3", class:"small" }, "尚無紀錄")));
+          tb.appendChild(el("tr", {}, el("td", { colspan:"3", class:"small" }, "尚無記錄")));
         }
         t.appendChild(tb);
         return t;
