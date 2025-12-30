@@ -1,23 +1,663 @@
-<html>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DrawPrize | 抽獎系統入口</title>
+
+  <!-- Elegant font (safe fallback if blocked) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* Deep Royal Blue + Luxury Gold */
+      --bg0:#040A1A;
+      --bg1:#06102C;
+      --panel:#071332;
+      --glass: rgba(12, 25, 58, .52);
+
+      --gold:#D4AF37;
+      --gold2:#F3E6B3;
+      --text:#ECF2FF;
+      --muted:#B9C6E6;
+
+      --stroke: rgba(255,255,255,.10);
+      --strokeGold: rgba(212,175,55,.26);
+      --shadow: 0 28px 80px rgba(0,0,0,.62);
+
+      --radius: 20px;
+      --radiusSm: 14px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:"Noto Sans TC", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+      color:var(--text);
+
+      /* Luxury background */
+      background:
+        radial-gradient(1200px 700px at 12% 12%, rgba(212,175,55,.13), transparent 60%),
+        radial-gradient(1000px 600px at 88% 25%, rgba(110,155,255,.16), transparent 55%),
+        radial-gradient(900px 580px at 60% 95%, rgba(212,175,55,.08), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    /* Soft film grain */
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(255,255,255,.05) 0 1px, transparent 1px),
+        radial-gradient(circle at 70% 50%, rgba(255,255,255,.03) 0 1px, transparent 1px),
+        radial-gradient(circle at 30% 80%, rgba(255,255,255,.04) 0 1px, transparent 1px);
+      background-size: 180px 180px, 220px 220px, 260px 260px;
+      opacity:.35;
+      mix-blend-mode: overlay;
+    }
+
+    /* Layout */
+    .wrap{
+      width:min(1100px, 100%);
+      margin:0 auto;
+      padding:28px;
+      min-height:100%;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      gap:14px;
+    }
+
+    /* Top bar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:14px 16px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+
+    .status{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:rgba(243,230,179,.9);
+      font-size:13px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .status .dot{
+      width:10px; height:10px;
+      border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, var(--gold2), var(--gold));
+      box-shadow: 0 0 0 4px rgba(212,175,55,.12);
+    }
+
+    .quick{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--strokeGold);
+      background: linear-gradient(180deg, rgba(212,175,55,.12), rgba(212,175,55,.04));
+      color:rgba(243,230,179,.95);
+      font-size:13px;
+      text-decoration:none;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .chip:hover{
+      transform: translateY(-1px);
+      border-color: rgba(212,175,55,.42);
+      box-shadow: 0 14px 34px rgba(0,0,0,.40);
+    }
+
+    /* Main shell (official website-like) */
+    .shell{
+      border-radius:var(--radius);
+      border:1px solid rgba(212,175,55,.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+        radial-gradient(900px 480px at 30% 0%, rgba(212,175,55,.11), transparent 60%),
+        radial-gradient(700px 440px at 92% 24%, rgba(130,170,255,.12), transparent 60%),
+        rgba(7, 19, 50, .55);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns: 300px 1fr;
+      min-height:520px;
+
+      /* entry animation */
+      transform: translateY(12px);
+      opacity:0;
+      animation: enter .7s ease forwards;
+    }
+
+    @keyframes enter{
+      to{ transform: translateY(0); opacity:1; }
+    }
+
+    @media (max-width: 860px){
+      .shell{ grid-template-columns: 1fr; }
+    }
+
+    /* Sidebar */
+    .sidebar{
+      padding:20px;
+      border-right:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.12);
+    }
+    @media (max-width: 860px){
+      .sidebar{ border-right:none; border-bottom:1px solid rgba(255,255,255,.08); }
+    }
+
+    .logo{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .mark{
+      width:44px; height:44px;
+      border-radius:14px;
+      border:1px solid rgba(212,175,55,.30);
+      background:
+        radial-gradient(circle at 25% 20%, rgba(243,230,179,.65), transparent 55%),
+        linear-gradient(180deg, rgba(212,175,55,.18), rgba(212,175,55,.06));
+      box-shadow: 0 12px 26px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+    /* subtle shine sweep on logo */
+    .mark:after{
+      content:"";
+      position:absolute;
+      inset:-40% -60%;
+      background: linear-gradient(120deg, transparent 35%, rgba(243,230,179,.35) 50%, transparent 65%);
+      transform: rotate(10deg) translateX(-40%);
+      animation: sweep 4.5s ease-in-out infinite;
+      opacity:.8;
+    }
+    @keyframes sweep{
+      0%, 55% { transform: rotate(10deg) translateX(-45%); opacity:.0; }
+      65% { opacity:.85; }
+      85% { transform: rotate(10deg) translateX(45%); opacity:.0; }
+      100%{ opacity:0; }
+    }
+
+    .logoTitle{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .logoTitle strong{
+      font-size:16px;
+      letter-spacing:.06em;
+    }
+    .logoTitle span{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .navTitle{
+      margin:14px 0 10px;
+      font-size:12px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:rgba(243,230,179,.9);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .navTitle:after{
+      content:"";
+      height:1px;
+      flex:1;
+      background: linear-gradient(90deg, rgba(212,175,55,.45), transparent);
+      opacity:.7;
+    }
+
+    .nav{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .nav a{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 12px;
+      border-radius:var(--radiusSm);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      text-decoration:none;
+      color:var(--text);
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+      overflow:hidden;
+    }
+
+    /* gold light sweep on hover */
+    .nav a:before{
+      content:"";
+      position:absolute;
+      inset:-40% -60%;
+      background: linear-gradient(120deg, transparent 35%, rgba(212,175,55,.28) 50%, transparent 65%);
+      transform: translateX(-55%);
+      transition: transform .45s ease;
+      pointer-events:none;
+    }
+
+    .nav a:hover{
+      transform: translateY(-2px);
+      border-color: rgba(212,175,55,.34);
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    .nav a:hover:before{
+      transform: translateX(55%);
+    }
+    .nav a:active{
+      transform: translateY(0px) scale(.99);
+    }
+
+    .nav .meta{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .nav .meta strong{ font-size:14px; }
+    .nav .meta span{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .tag{
+      flex:0 0 auto;
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(243,230,179,.22);
+      background: rgba(0,0,0,.22);
+      color:rgba(243,230,179,.92);
+    }
+
+    .sideFooter{
+      margin-top:16px;
+      padding-top:14px;
+      border-top:1px solid rgba(255,255,255,.08);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      color:rgba(185,198,230,.88);
+      font-size:12px;
+    }
+
+    .sideFooter .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:11px;
+      padding:4px 7px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      color:rgba(243,230,179,.92);
+      white-space:nowrap;
+    }
+
+    /* Content */
+    .content{
+      padding:22px;
+    }
+
+    .hero{
+      padding:18px 18px;
+      border-radius:var(--radius);
+      border:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(700px 320px at 10% 0%, rgba(212,175,55,.10), transparent 55%),
+        rgba(255,255,255,.03);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      margin-bottom:16px;
+
+      transform: translateY(10px);
+      opacity:0;
+      animation: enter .7s ease .08s forwards;
+    }
+
+    .hero .kicker{
+      font-size:12px;
+      letter-spacing:.20em;
+      text-transform:uppercase;
+      color:rgba(243,230,179,.9);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .hero .kicker:before{
+      content:"";
+      width:36px;
+      height:1px;
+      background:linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity:.9;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      line-height:1.22;
+    }
+    .hero p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.65;
+    }
+
+    .cols{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+
+    .card{
+      border-radius:var(--radius);
+      border:1px solid rgba(212,175,55,.16);
+      background: var(--glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 18px 50px rgba(0,0,0,.40);
+      overflow:hidden;
+
+      transform: translateY(10px);
+      opacity:0;
+      animation: enter .7s ease .14s forwards;
+    }
+
+    .cardHead{
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
+    }
+    .cardHead strong{
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size:12px;
+      color:rgba(243,230,179,.92);
+    }
+    .cardHead span{
+      font-size:12px;
+      color:rgba(185,198,230,.9);
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:14px 14px 16px;
+    }
+
+    .item{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:12px 12px;
+      border-radius:var(--radiusSm);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      text-decoration:none;
+      color:var(--text);
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+      overflow:hidden;
+    }
+    .item:before{
+      content:"";
+      position:absolute;
+      inset:-40% -60%;
+      background: linear-gradient(120deg, transparent 35%, rgba(243,230,179,.18) 50%, transparent 65%);
+      transform: translateX(-55%);
+      transition: transform .45s ease;
+      pointer-events:none;
+    }
+    .item:hover{
+      transform: translateY(-2px);
+      border-color: rgba(212,175,55,.30);
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    .item:hover:before{
+      transform: translateX(55%);
+    }
+    .item:active{ transform: translateY(0) scale(.99); }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+    }
+    .title strong{ font-size:14px; }
+    .title span{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .pill{
+      flex:0 0 auto;
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(243,230,179,.22);
+      background: rgba(0,0,0,.22);
+      color:rgba(243,230,179,.92);
+      white-space:nowrap;
+    }
+
+    footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      color:rgba(185,198,230,.85);
+      font-size:12px;
+      padding:2px 2px;
+    }
+    footer a{
+      color:rgba(243,230,179,.9);
+      text-decoration:none;
+      border-bottom:1px dashed rgba(212,175,55,.35);
+    }
+    footer a:hover{ border-bottom-color: rgba(212,175,55,.7); }
+
+    /* Reduced motion accessibility */
+    @media (prefers-reduced-motion: reduce){
+      *{ animation:none !important; transition:none !important; }
+      .shell, .hero, .card{ opacity:1 !important; transform:none !important; }
+      .mark:after{ display:none; }
+    }
+  </style>
+</head>
 
 <body>
-<h1><a href="https://thrisiser.github.io/DrawPrize/抽獎程式v2_抽獎主畫面.html">完整抽獎</h1>
-<br/>
-<h3><a href="https://thrisiser.github.io/DrawPrize/抽獎結果展示與儲存.html">僅顯示獎項與得獎者</h3>
+  <div class="wrap">
 
-<font size="16" color="brown">
-<a href="https://thrisiser.github.io/DrawPrize/獎項測試資料.csv">獎項</a><br/>
-<a href="https://thrisiser.github.io/DrawPrize/抽獎名單模擬資料.csv">名單</a>
-  <a href="https://thrisiser.github.io/DrawPrize/真實名單模擬選號.csv">93位具抽獎資料者名單（選號為模擬）</a>
-</font>
-  
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="status">
+        <span class="dot" aria-hidden="true"></span>
+        <span>Luxury Gold × Deep Royal Blue</span>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="quick">
+        <a class="chip" href="https://thrisiser.github.io/DrawPrize/抽獎程式v2_抽獎主畫面.html">▶ 完整抽獎</a>
+        <a class="chip" href="https://thrisiser.github.io/DrawPrize/抽獎結果展示與儲存.html">★ 結果展示</a>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <section class="shell">
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="mark" aria-hidden="true"></div>
+          <div class="logoTitle">
+            <strong>DrawPrize</strong>
+            <span>抽獎系統 · Portal</span>
+          </div>
+        </div>
+
+        <div class="navTitle">Navigation</div>
+        <nav class="nav">
+          <a href="https://thrisiser.github.io/DrawPrize/抽獎程式v2_抽獎主畫面.html">
+            <div class="meta">
+              <strong>完整抽獎</strong>
+              <span>主流程 · 抽出得獎者</span>
+            </div>
+            <span class="tag">Start</span>
+          </a>
+
+          <a href="https://thrisiser.github.io/DrawPrize/抽獎結果展示與儲存.html">
+            <div class="meta">
+              <strong>結果展示與儲存</strong>
+              <span>快速查看 · 匯出結果</span>
+            </div>
+            <span class="tag">View</span>
+          </a>
+        </nav>
+
+        <div class="navTitle">Info</div>
+        <div class="sideFooter">
+          <div class="row"><span>Version</span><span class="kbd">v2</span></div>
+          <div class="row"><span>Theme</span><span class="kbd">Luxury Gold</span></div>
+          <div class="row"><span>Shortcut</span><span class="kbd">Ctrl</span> <span class="kbd">L</span></div>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <div class="content">
+        <section class="hero">
+          <div class="kicker">DrawPrize Portal</div>
+          <h1>抽獎系統入口總覽</h1>
+          <p>
+            以「奢華金」與「深邃藍」打造的簡潔入口頁：左側導覽、右側內容，
+            讓使用者一眼找到抽獎主流程與資料下載。
+          </p>
+        </section>
+
+        <div class="cols">
+          <!-- Main Actions -->
+          <section class="card">
+            <div class="cardHead">
+              <strong>Actions</strong>
+              <span>抽獎功能入口</span>
+            </div>
+            <div class="list">
+              <a class="item" href="https://thrisiser.github.io/DrawPrize/抽獎程式v2_抽獎主畫面.html">
+                <div class="title">
+                  <strong>完整抽獎</strong>
+                  <span>進入主畫面，執行抽獎流程與操作</span>
+                </div>
+                <span class="pill">Start</span>
+              </a>
+
+              <a class="item" href="https://thrisiser.github.io/DrawPrize/抽獎結果展示與儲存.html">
+                <div class="title">
+                  <strong>僅顯示獎項與得獎者</strong>
+                  <span>快速展示結果，並支援儲存輸出</span>
+                </div>
+                <span class="pill">View</span>
+              </a>
+            </div>
+          </section>
+
+          <!-- Data Files -->
+          <section class="card">
+            <div class="cardHead">
+              <strong>Data Files</strong>
+              <span>CSV 下載</span>
+            </div>
+            <div class="list">
+              <a class="item" href="https://thrisiser.github.io/DrawPrize/獎項測試資料.csv">
+                <div class="title">
+                  <strong>獎項</strong>
+                  <span>獎項測試資料.csv</span>
+                </div>
+                <span class="pill">CSV</span>
+              </a>
+
+              <a class="item" href="https://thrisiser.github.io/DrawPrize/抽獎名單模擬資料.csv">
+                <div class="title">
+                  <strong>名單</strong>
+                  <span>抽獎名單模擬資料.csv</span>
+                </div>
+                <span class="pill">CSV</span>
+              </a>
+
+              <a class="item" href="https://thrisiser.github.io/DrawPrize/真實名單模擬選號.csv">
+                <div class="title">
+                  <strong>93位具抽獎資料者名單（選號為模擬）</strong>
+                  <span>真實名單模擬選號.csv</span>
+                </div>
+                <span class="pill">CSV</span>
+              </a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>© DrawPrize · Luxury UI</div>
+      <div>
+        你也可以把此頁設為入口首頁（GitHub Pages）｜
+        <a href="https://thrisiser.github.io/DrawPrize/">返回專案根目錄</a>
+      </div>
+    </footer>
+
+  </div>
 </body>
-
-
 </html>
-
-
-
-
-
-
