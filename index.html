@@ -29,6 +29,9 @@
 
       --radius: 20px;
       --radiusSm: 14px;
+
+      --containerPad: clamp(16px, 2.4vw, 34px);
+      --containerMax: 1400px; /* 內容最大寬（大螢幕也不會太空），仍會「看起來全幅」 */
     }
 
     *{ box-sizing:border-box; }
@@ -38,7 +41,6 @@
       font-family:"Noto Sans TC", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
       color:var(--text);
 
-      /* Luxury background */
       background:
         radial-gradient(1200px 700px at 12% 12%, rgba(212,175,55,.13), transparent 60%),
         radial-gradient(1000px 600px at 88% 25%, rgba(110,155,255,.16), transparent 55%),
@@ -61,122 +63,45 @@
       mix-blend-mode: overlay;
     }
 
-    /* Layout */
+    /* Layout container (滿版感：背景全幅、內容置中且寬) */
     .wrap{
-      width:min(1100px, 100%);
-      margin:0 auto;
-      padding:28px;
-      min-height:100%;
-      display:grid;
-      grid-template-rows:auto 1fr auto;
-      gap:14px;
+      width: 100%;
+      min-height: 100%;
+      padding: var(--containerPad);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
     }
 
-    /* Top bar */
+    .container{
+      width: min(var(--containerMax), 100%);
+      margin: 0 auto;
+    }
+
+    /* Header / Topbar */
     .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      padding:14px 16px;
-      border-radius:999px;
+      width: 100%;
+      border-radius: 999px;
       border:1px solid rgba(255,255,255,.10);
       background: rgba(0,0,0,.18);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 12px 30px rgba(0,0,0,.35);
-    }
+      padding: 12px 14px;
 
-    .status{
       display:flex;
       align-items:center;
-      gap:10px;
-      color:rgba(243,230,179,.9);
-      font-size:13px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      white-space:nowrap;
-    }
-    .status .dot{
-      width:10px; height:10px;
-      border-radius:50%;
-      background: radial-gradient(circle at 30% 30%, var(--gold2), var(--gold));
-      box-shadow: 0 0 0 4px rgba(212,175,55,.12);
+      justify-content:space-between;
+      gap: 12px;
     }
 
-    .quick{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid var(--strokeGold);
-      background: linear-gradient(180deg, rgba(212,175,55,.12), rgba(212,175,55,.04));
-      color:rgba(243,230,179,.95);
-      font-size:13px;
-      text-decoration:none;
-      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    }
-    .chip:hover{
-      transform: translateY(-1px);
-      border-color: rgba(212,175,55,.42);
-      box-shadow: 0 14px 34px rgba(0,0,0,.40);
-    }
-
-    /* Main shell (official website-like) */
-    .shell{
-      border-radius:var(--radius);
-      border:1px solid rgba(212,175,55,.22);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
-        radial-gradient(900px 480px at 30% 0%, rgba(212,175,55,.11), transparent 60%),
-        radial-gradient(700px 440px at 92% 24%, rgba(130,170,255,.12), transparent 60%),
-        rgba(7, 19, 50, .55);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      display:grid;
-      grid-template-columns: 300px 1fr;
-      min-height:520px;
-
-      /* entry animation */
-      transform: translateY(12px);
-      opacity:0;
-      animation: enter .7s ease forwards;
-    }
-
-    @keyframes enter{
-      to{ transform: translateY(0); opacity:1; }
-    }
-
-    @media (max-width: 860px){
-      .shell{ grid-template-columns: 1fr; }
-    }
-
-    /* Sidebar */
-    .sidebar{
-      padding:20px;
-      border-right:1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.12);
-    }
-    @media (max-width: 860px){
-      .sidebar{ border-right:none; border-bottom:1px solid rgba(255,255,255,.08); }
-    }
-
-    .logo{
+    .brand{
       display:flex;
       align-items:center;
-      gap:12px;
-      margin-bottom:16px;
+      gap: 12px;
+      min-width: 0;
     }
+
     .mark{
       width:44px; height:44px;
       border-radius:14px;
@@ -187,8 +112,8 @@
       box-shadow: 0 12px 26px rgba(0,0,0,.35);
       position:relative;
       overflow:hidden;
+      flex: 0 0 auto;
     }
-    /* subtle shine sweep on logo */
     .mark:after{
       content:"";
       position:absolute;
@@ -205,161 +130,127 @@
       100%{ opacity:0; }
     }
 
-    .logoTitle{
+    .brandText{
       display:flex;
       flex-direction:column;
-      gap:2px;
-      min-width:0;
+      gap: 2px;
+      min-width: 0;
     }
-    .logoTitle strong{
-      font-size:16px;
-      letter-spacing:.06em;
+    .brandText strong{
+      font-size: 15px;
+      letter-spacing:.08em;
+      line-height: 1.2;
     }
-    .logoTitle span{
-      font-size:12px;
-      color:var(--muted);
+    .brandText span{
+      font-size: 12px;
+      color: var(--muted);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
 
-    .navTitle{
-      margin:14px 0 10px;
-      font-size:12px;
-      letter-spacing:.18em;
-      text-transform:uppercase;
+    .rightTools{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+
+    .status{
+      display:flex;
+      align-items:center;
+      gap:10px;
       color:rgba(243,230,179,.9);
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .navTitle:after{
-      content:"";
-      height:1px;
-      flex:1;
-      background: linear-gradient(90deg, rgba(212,175,55,.45), transparent);
-      opacity:.7;
-    }
-
-    .nav{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-
-    .nav a{
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:12px 12px;
-      border-radius:var(--radiusSm);
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.03);
-      text-decoration:none;
-      color:var(--text);
-      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-      overflow:hidden;
-    }
-
-    /* gold light sweep on hover */
-    .nav a:before{
-      content:"";
-      position:absolute;
-      inset:-40% -60%;
-      background: linear-gradient(120deg, transparent 35%, rgba(212,175,55,.28) 50%, transparent 65%);
-      transform: translateX(-55%);
-      transition: transform .45s ease;
-      pointer-events:none;
-    }
-
-    .nav a:hover{
-      transform: translateY(-2px);
-      border-color: rgba(212,175,55,.34);
-      box-shadow: 0 16px 40px rgba(0,0,0,.45);
-    }
-    .nav a:hover:before{
-      transform: translateX(55%);
-    }
-    .nav a:active{
-      transform: translateY(0px) scale(.99);
-    }
-
-    .nav .meta{
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-      min-width:0;
-    }
-    .nav .meta strong{ font-size:14px; }
-    .nav .meta span{
       font-size:12px;
-      color:var(--muted);
+      letter-spacing:.12em;
+      text-transform:uppercase;
       white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(212,175,55,.18);
+      background: rgba(0,0,0,.18);
+    }
+    .status .dot{
+      width:10px; height:10px;
+      border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, var(--gold2), var(--gold));
+      box-shadow: 0 0 0 4px rgba(212,175,55,.12);
     }
 
-    .tag{
-      flex:0 0 auto;
-      font-size:12px;
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(243,230,179,.22);
-      background: rgba(0,0,0,.22);
-      color:rgba(243,230,179,.92);
-    }
-
-    .sideFooter{
-      margin-top:16px;
-      padding-top:14px;
-      border-top:1px solid rgba(255,255,255,.08);
-      display:flex;
-      flex-direction:column;
+    .chip{
+      display:inline-flex;
+      align-items:center;
       gap:8px;
-      color:rgba(185,198,230,.88);
-      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--strokeGold);
+      background: linear-gradient(180deg, rgba(212,175,55,.12), rgba(212,175,55,.04));
+      color:rgba(243,230,179,.95);
+      font-size:13px;
+      text-decoration:none;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      white-space: nowrap;
+    }
+    .chip:hover{
+      transform: translateY(-1px);
+      border-color: rgba(212,175,55,.42);
+      box-shadow: 0 14px 34px rgba(0,0,0,.40);
     }
 
-    .sideFooter .row{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .kbd{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:11px;
-      padding:4px 7px;
-      border-radius:8px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.25);
-      color:rgba(243,230,179,.92);
-      white-space:nowrap;
+    .chip svg{ width:16px; height:16px; opacity:.92; }
+
+    /* Main shell (full-width feel) */
+    .shell{
+      width: 100%;
+      border-radius: var(--radius);
+      border:1px solid rgba(212,175,55,.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+        radial-gradient(900px 480px at 30% 0%, rgba(212,175,55,.11), transparent 60%),
+        radial-gradient(700px 440px at 92% 24%, rgba(130,170,255,.12), transparent 60%),
+        rgba(7, 19, 50, .55);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      padding: clamp(16px, 2.2vw, 24px);
+
+      transform: translateY(12px);
+      opacity:0;
+      animation: enter .7s ease forwards;
     }
 
-    /* Content */
-    .content{
-      padding:22px;
+    @keyframes enter{
+      to{ transform: translateY(0); opacity:1; }
     }
 
+    /* Hero */
     .hero{
-      padding:18px 18px;
-      border-radius:var(--radius);
+      padding: clamp(14px, 2vw, 18px);
+      border-radius: var(--radius);
       border:1px solid rgba(255,255,255,.10);
       background:
         radial-gradient(700px 320px at 10% 0%, rgba(212,175,55,.10), transparent 55%),
         rgba(255,255,255,.03);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      margin-bottom:16px;
+      margin-bottom: 16px;
 
       transform: translateY(10px);
       opacity:0;
       animation: enter .7s ease .08s forwards;
     }
 
-    .hero .kicker{
+    .heroTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .kicker{
       font-size:12px;
       letter-spacing:.20em;
       text-transform:uppercase;
@@ -369,31 +260,43 @@
       gap:10px;
       margin-bottom:8px;
     }
-    .hero .kicker:before{
+    .kicker:before{
       content:"";
       width:36px;
       height:1px;
       background:linear-gradient(90deg, transparent, var(--gold), transparent);
       opacity:.9;
     }
+
     .hero h1{
       margin:0;
-      font-size:26px;
+      font-size: clamp(22px, 2.2vw, 30px);
       line-height:1.22;
+      letter-spacing: .02em;
     }
+
     .hero p{
       margin:8px 0 0;
       color:var(--muted);
       font-size:14px;
       line-height:1.65;
+      max-width: 78ch;
     }
 
-    .cols{
+    /* Grid cards (fill width on desktop) */
+    .grid{
       display:grid;
       grid-template-columns: 1fr;
-      gap:14px;
+      gap: 14px;
     }
 
+    @media (min-width: 960px){
+      .grid{
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* Cards */
     .card{
       border-radius:var(--radius);
       border:1px solid rgba(212,175,55,.16);
@@ -422,7 +325,11 @@
       text-transform:uppercase;
       font-size:12px;
       color:rgba(243,230,179,.92);
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
+    .cardHead svg{ width:16px; height:16px; opacity:.9; }
     .cardHead span{
       font-size:12px;
       color:rgba(185,198,230,.9);
@@ -449,6 +356,7 @@
       color:var(--text);
       transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
       overflow:hidden;
+      outline: none;
     }
     .item:before{
       content:"";
@@ -464,10 +372,15 @@
       border-color: rgba(212,175,55,.30);
       box-shadow: 0 16px 40px rgba(0,0,0,.45);
     }
-    .item:hover:before{
-      transform: translateX(55%);
-    }
+    .item:hover:before{ transform: translateX(55%); }
     .item:active{ transform: translateY(0) scale(.99); }
+
+    /* keyboard focus */
+    .item:focus-visible,
+    .chip:focus-visible{
+      box-shadow: 0 0 0 3px rgba(212,175,55,.22), 0 16px 40px rgba(0,0,0,.45);
+      border-color: rgba(212,175,55,.55);
+    }
 
     .title{
       display:flex;
@@ -493,16 +406,26 @@
       background: rgba(0,0,0,.22);
       color:rgba(243,230,179,.92);
       white-space:nowrap;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
     }
+    .pill svg{ width:14px; height:14px; opacity:.92; }
 
     footer{
+      width: 100%;
+      color:rgba(185,198,230,.85);
+      font-size:12px;
+      padding: 2px 2px;
+    }
+    .footerInner{
+      width: min(var(--containerMax), 100%);
+      margin: 0 auto;
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:12px;
-      color:rgba(185,198,230,.85);
-      font-size:12px;
-      padding:2px 2px;
+      flex-wrap: wrap;
     }
     footer a{
       color:rgba(243,230,179,.9);
@@ -522,40 +445,80 @@
 
 <body>
   <div class="wrap">
+    <!-- Header -->
+    <div class="container">
+      <header class="topbar" aria-label="DrawPrize header">
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div class="brandText">
+            <strong>DrawPrize Portal</strong>
+            <span>年終感恩餐會抽獎系統入口</span>
+          </div>
+        </div>
 
-    <!-- Topbar -->
-    <div class="topbar">
-      <div class="status">
-        <span class="dot" aria-hidden="true"></span>
-        <span>年終感恩餐會抽獎系統</span>
-      </div>
+        <div class="rightTools">
+          <div class="status" title="系統狀態">
+            <span class="dot" aria-hidden="true"></span>
+            <span>READY</span>
+          </div>
 
+          <a class="chip" href="https://thrisiser.github.io/DrawPrize/抽獎程式v2_抽獎主畫面.html">
+            <!-- play icon -->
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M8 5v14l12-7-12-7Z" fill="currentColor"/>
+            </svg>
+            進入抽獎
+          </a>
+
+          <a class="chip" href="https://thrisiser.github.io/DrawPrize/抽獎結果展示與儲存.html">
+            <!-- list icon -->
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M8 6h13v2H8V6Zm0 5h13v2H8v-2Zm0 5h13v2H8v-2ZM3 7a1 1 0 1 0 2 0 1 1 0 0 0-2 0Zm0 5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Zm0 5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" fill="currentColor"/>
+            </svg>
+            看結果
+          </a>
+        </div>
+      </header>
+    </div>
 
     <!-- Main -->
-    <section class="shell">
-
-      
-      <!-- Content -->
-      <div class="content">
+    <main class="container">
+      <section class="shell" aria-label="DrawPrize main content">
         <section class="hero">
-          <div class="kicker">DrawPrize Portal</div>
-          <h1>年終感恩餐會抽獎系統入口</h1>
+          <div class="heroTop">
+            <div>
+              <div class="kicker">DrawPrize Portal</div>
+              <h1>年終感恩餐會抽獎系統入口</h1>
+              <p>提供抽獎主程式、結果展示頁，以及測試/範例資料（CSV）下載。建議以投影模式開啟並使用全螢幕呈現。</p>
+            </div>
+          </div>
         </section>
 
-        <div class="cols">
+        <section class="grid">
           <!-- Main Actions -->
           <section class="card">
             <div class="cardHead">
-              <strong>Actions</strong>
+              <strong>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 2 2 7l10 5 10-5-10-5Zm0 9L2 6v11l10 5 10-5V6l-10 5Z" fill="currentColor"/>
+                </svg>
+                Actions
+              </strong>
               <span>抽獎功能入口</span>
             </div>
+
             <div class="list">
               <a class="item" href="https://thrisiser.github.io/DrawPrize/抽獎程式v2_抽獎主畫面.html">
                 <div class="title">
                   <strong>年終感恩餐會抽獎系統</strong>
                   <span>進入主畫面，執行抽獎流程與操作</span>
                 </div>
-                <span class="pill">Start</span>
+                <span class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8 5v14l12-7-12-7Z" fill="currentColor"/>
+                  </svg>
+                  Start
+                </span>
               </a>
 
               <a class="item" href="https://thrisiser.github.io/DrawPrize/抽獎結果展示與儲存.html">
@@ -563,7 +526,12 @@
                   <strong>僅顯示獎項與得獎者</strong>
                   <span>快速展示結果，並支援儲存輸出</span>
                 </div>
-                <span class="pill">View</span>
+                <span class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z" fill="currentColor"/>
+                  </svg>
+                  View
+                </span>
               </a>
             </div>
           </section>
@@ -571,22 +539,40 @@
           <!-- Data Files -->
           <section class="card">
             <div class="cardHead">
-              <strong>Data Files</strong>
+              <strong>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-8-6Zm0 2.5L19.5 9H14V4.5ZM7 13h10v2H7v-2Zm0 4h10v2H7v-2Zm0-8h6v2H7V9Z" fill="currentColor"/>
+                </svg>
+                Data Files
+              </strong>
               <span>CSV 下載</span>
             </div>
+
             <div class="list">
               <a class="item" href="https://thrisiser.github.io/DrawPrize/獎項測試資料.csv">
                 <div class="title">
                   <strong>獎項測試資料</strong>
+                  <span>獎項項目與數量（範例）</span>
                 </div>
-                <span class="pill">CSV</span>
+                <span class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3v10.2l3.6-3.6L17 11l-5 5-5-5 1.4-1.4L12 13.2V3h0ZM5 19h14v2H5v-2Z" fill="currentColor"/>
+                  </svg>
+                  CSV
+                </span>
               </a>
 
               <a class="item" href="https://thrisiser.github.io/DrawPrize/抽獎名單模擬資料.csv">
                 <div class="title">
                   <strong>名單測試資料</strong>
+                  <span>抽獎名單（範例）</span>
                 </div>
-                <span class="pill">CSV</span>
+                <span class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3v10.2l3.6-3.6L17 11l-5 5-5-5 1.4-1.4L12 13.2V3h0ZM5 19h14v2H5v-2Z" fill="currentColor"/>
+                  </svg>
+                  CSV
+                </span>
               </a>
 
               <a class="item" href="https://thrisiser.github.io/DrawPrize/真實名單模擬選號.csv">
@@ -594,18 +580,27 @@
                   <strong>93位具抽獎資料者名單（選號為模擬）</strong>
                   <span>真實名單模擬選號.csv</span>
                 </div>
-                <span class="pill">CSV</span>
+                <span class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3v10.2l3.6-3.6L17 11l-5 5-5-5 1.4-1.4L12 13.2V3h0ZM5 19h14v2H5v-2Z" fill="currentColor"/>
+                  </svg>
+                  CSV
+                </span>
               </a>
             </div>
           </section>
-        </div>
-      </div>
-    </section>
+        </section>
+      </section>
+    </main>
 
     <footer>
-      <div>© DrawPrize · 2025 · 年終感恩餐會抽獎</div>
+      <div class="footerInner">
+        <div>© DrawPrize · 2025 · 年終感恩餐會抽獎</div>
+        <div>
+          <a href="https://thrisiser.github.io/DrawPrize/">Project Home</a>
+        </div>
+      </div>
     </footer>
-
   </div>
 </body>
 </html>
